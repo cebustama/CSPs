@@ -66,7 +66,7 @@ public class NodeController : MonoBehaviour
         domainCanvas.worldCamera = Camera.main;
     }
 
-    public void Connect(CSPGraphColoring gcCSP, CSP<Color>.CSPVariable<Color> var)
+    public void Connect(GraphColoringCSP gcCSP, CSP<Color>.CSPVariable<Color> var)
     {
         Variable = var;
 

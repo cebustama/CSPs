@@ -26,12 +26,12 @@ public partial class CSP<T>
         public List<V> domain; // Use list in case of variable domains
         public V value;
 
-        public void AssignRandom()
+        public void AssignRandom(System.Random rng)
         {
             if (domain.Count < 1)
                 throw new ArgumentOutOfRangeException();
 
-            value = domain[UnityEngine.Random.Range(0, domain.Count)];
+            value = domain[rng.Next(0, domain.Count)];
         }
 
         public bool AssignValue(V value, bool checkDomain = false)
@@ -98,9 +98,22 @@ public partial class CSP<T>
         }
     }
 
+    public List<CSPConstraint<T>> GetConstraintsFromTo(string v1, string v2)
+    {
+        List<CSPConstraint<T>> constraints = new List<CSPConstraint<T>>();
+
+        // One way
+        foreach (CSPConstraint<T> c in ConstraintsDictionary[v1])
+        {
+            if (c.variableIDs.Contains(v2)) constraints.Add(c);
+        }
+
+        return constraints;
+    }
+
     public virtual void Solve() { }
 
-    public virtual void SolveWithAgents(GameObject[] agents) { }
+    public virtual void SolveWithAgents(GameObject[] agents, string seed) { }
         
     public virtual void Step() { }
 
@@ -148,6 +161,16 @@ public partial class CSP<T>
         }
 
         return false;
+    }
+
+    public virtual void AssignRandom(string varID, System.Random rng)
+    {
+        VariablesDictionary[varID].AssignRandom(rng);
+    }
+
+    public virtual void AssignValue(string varID, T value)
+    {
+        VariablesDictionary[varID].AssignValue(value);
     }
 
     // Checks solution for consistency

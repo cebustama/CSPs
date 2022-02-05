@@ -25,6 +25,14 @@ public class @InputActions : IInputActionCollection, IDisposable
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""Step"",
+                    ""type"": ""Button"",
+                    ""id"": ""b5c7a484-c3eb-4b9a-840b-e6002861860f"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -36,6 +44,17 @@ public class @InputActions : IInputActionCollection, IDisposable
                     ""processors"": """",
                     ""groups"": ""Keyboard"",
                     ""action"": ""FPS"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""4f25e674-cfd3-4505-b266-23ee2d4edadb"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Step"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -59,6 +78,7 @@ public class @InputActions : IInputActionCollection, IDisposable
         // Default
         m_Default = asset.FindActionMap("Default", throwIfNotFound: true);
         m_Default_FPS = m_Default.FindAction("FPS", throwIfNotFound: true);
+        m_Default_Step = m_Default.FindAction("Step", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -109,11 +129,13 @@ public class @InputActions : IInputActionCollection, IDisposable
     private readonly InputActionMap m_Default;
     private IDefaultActions m_DefaultActionsCallbackInterface;
     private readonly InputAction m_Default_FPS;
+    private readonly InputAction m_Default_Step;
     public struct DefaultActions
     {
         private @InputActions m_Wrapper;
         public DefaultActions(@InputActions wrapper) { m_Wrapper = wrapper; }
         public InputAction @FPS => m_Wrapper.m_Default_FPS;
+        public InputAction @Step => m_Wrapper.m_Default_Step;
         public InputActionMap Get() { return m_Wrapper.m_Default; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -126,6 +148,9 @@ public class @InputActions : IInputActionCollection, IDisposable
                 @FPS.started -= m_Wrapper.m_DefaultActionsCallbackInterface.OnFPS;
                 @FPS.performed -= m_Wrapper.m_DefaultActionsCallbackInterface.OnFPS;
                 @FPS.canceled -= m_Wrapper.m_DefaultActionsCallbackInterface.OnFPS;
+                @Step.started -= m_Wrapper.m_DefaultActionsCallbackInterface.OnStep;
+                @Step.performed -= m_Wrapper.m_DefaultActionsCallbackInterface.OnStep;
+                @Step.canceled -= m_Wrapper.m_DefaultActionsCallbackInterface.OnStep;
             }
             m_Wrapper.m_DefaultActionsCallbackInterface = instance;
             if (instance != null)
@@ -133,6 +158,9 @@ public class @InputActions : IInputActionCollection, IDisposable
                 @FPS.started += instance.OnFPS;
                 @FPS.performed += instance.OnFPS;
                 @FPS.canceled += instance.OnFPS;
+                @Step.started += instance.OnStep;
+                @Step.performed += instance.OnStep;
+                @Step.canceled += instance.OnStep;
             }
         }
     }
@@ -149,5 +177,6 @@ public class @InputActions : IInputActionCollection, IDisposable
     public interface IDefaultActions
     {
         void OnFPS(InputAction.CallbackContext context);
+        void OnStep(InputAction.CallbackContext context);
     }
 }

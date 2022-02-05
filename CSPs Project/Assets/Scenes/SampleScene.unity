@@ -319,14 +319,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   graphSeed: jesus
-  numNodes: 50
-  density: 0.3
+  numNodes: 10
+  density: 0.4
   numColors: 8
   generate: 0
   nodePrefab: {fileID: 4304179420609380690, guid: 8d579b9caf054e84fb1db5633dcbbbff, type: 3}
   radius: 4
   nodeScale: 0.6
-  lineWidth: 0.02
+  lineWidth: 0.075
   lineMaterial: {fileID: 2100000, guid: 8e5278241b6b45f43ba064df5303bdfe, type: 2}
   lineGradient:
     serializedVersion: 2
@@ -357,11 +357,12 @@ MonoBehaviour:
     m_Mode: 1
     m_NumColorKeys: 5
     m_NumAlphaKeys: 2
-  initialAngleOffset: 0
+  initialAngleOffset: 90
   algorithm: 2
   ordering: 2
   solve: 0
-  step: 0
+  Step: 0
+  IsPaused: 0
 --- !u!114 &526810095
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -545,8 +546,8 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 0
-  orthographic size: 5
+  orthographic: 1
+  orthographic size: 7
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -829,6 +830,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fpsPanel: {fileID: 1264917776}
+  visualizer: {fileID: 526810094}
 --- !u!114 &1893524013
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -5,13 +5,14 @@ using GraphLibrary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
+using System.Collections;
 
 /// <summary>
 /// Specific type of Constraint Satisfaction Problem about coloring neighbouring graphs
 /// </summary>
 [Serializable]
 // TODO: Create CSPGraph class, CSPs which receive graphs as input
-public class CSPGraphColoring : CSP<Color>
+public class GraphColoringCSP : CSP<Color>
 {
     [Serializable]
     public class GraphNode : IVertex
@@ -23,7 +24,7 @@ public class CSPGraphColoring : CSP<Color>
 
     public UndirectedGraph<GraphNode, int> Graph { get; private set; }
 
-    public CSPGraphColoring(string[] names, Color[][] domains, float density, string seed) : base(names, domains, Color.black)
+    public GraphColoringCSP(string[] names, Color[][] domains, float density, string seed) : base(names, domains, Color.black)
     {
         // TODO: Move this outside, receive graph and construct Variables/Constraints Data
         GenerateGraph(names, density, seed);
@@ -115,11 +116,15 @@ public class CSPGraphColoring : CSP<Color>
         UnityEngine.Debug.Log(watch.ElapsedMilliseconds + "[ms]");
     }
 
-    public override void SolveWithAgents(GameObject[] agents)
+    public override void SolveWithAgents(GameObject[] agents, string seed)
     {
         UnityEngine.Debug.Log("<color=red>Solving Graph Coloring CSP</color>");
         var watch = Stopwatch.StartNew();
-        SolveABT(this, agents, watch);
+
+
+        // TODO: Decide here wheter to send this csp or a new copy
+
+        SolveABT(this, agents, watch, seed);
     }
 
     // TODO: Create visualizer class
@@ -243,29 +248,55 @@ public class CSPGraphColoring : CSP<Color>
         }
     }
 
-    public void SolveABT(CSP<Color> csp, GameObject[] agentObjects, Stopwatch watch)
+    /// <summary>
+    /// Asynchronous Backtracking using Node Variable objects as agents
+    /// </summary>
+    /// <param name="csp"></param>
+    /// <param name="agentObjects"></param>
+    /// <param name="watch"></param>
+    public void SolveABT(CSP<Color> csp, GameObject[] agentObjects, Stopwatch watch, string seed)
     {
-        SetupABT(csp, agentObjects);
-        // TODO: Corutina que vaya revisando periódicamente en el CSP si se alcanzó una solución o si no hay
-    }
-
-    private void SetupABT(CSP<Color> csp, GameObject[] agentObjects)
-    {
+        // TODO: TODA ESTA PARTE, hay que ordenar las variables y luego los agentes, o al mismo tiempo de alguna forma
+        // Order variables
         List<CSPVariable<Color>> orderedVariables = OrderVariables(vars =>
         {
-            return vars.OrderByDescending(a => Graph.Degree(Graph.GetVertex(a.name))).ToList();
-            //return vars;
+            //return vars.OrderByDescending(a => Graph.Degree(Graph.GetVertex(a.name))).ToList();
+            return vars;
         });
 
-        for (int i = 0; i < agentObjects.Length; i++)
+        // Order agentObjects according to variable ids
+        List<GameObject> orderedAgents = agentObjects.ToList();
+        //orderedAgents = orderedAgents.OrderBy(a =>  )
+        //////////////////////////////
+
+        // Create ABT manager
+        ABTManager<Color> manager = new ABTManager<Color>(csp);
+        for (int i = 0; i < orderedVariables.Count; i++)
         {
-            GameObject o = agentObjects[i];
-            GraphColoringABTAgent agt = o.AddComponent<GraphColoringABTAgent>();
-            agt.Setup(this, orderedVariables[i].name, agentObjects.Length - i);
+            // Create Agent
+            ABTAgent<Color> ABTAgent = manager.AddAgent(orderedVariables[i].name, orderedVariables.Count - i);
+
+            // Add component to gameobject and setup
+            GraphColoringABTAgent agentBehaviour = orderedAgents[i].AddComponent<GraphColoringABTAgent>();
+            agentBehaviour.Setup(ABTAgent);
         }
-        // TODO:initialize them with random value
-        // Start them
+
+        manager.Start(seed);
     }
 
+    private IEnumerator WaitForSolution(ABTManager<Color> manager, Stopwatch watch)
+    {
+        while (!manager.Stopped)
+        {
+            yield return null;
+        }
+
+        watch.Stop();
+
+        if (manager.FoundSolution)
+            UnityEngine.Debug.Log("Solution found in " + watch.ElapsedMilliseconds + "[ms]");
+        else
+            UnityEngine.Debug.Log("No Solution in " + watch.ElapsedMilliseconds + "[ms]");
+    }
     #endregion
 }

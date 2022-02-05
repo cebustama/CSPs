@@ -31,7 +31,7 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
     // TODO: Different Domains
     // TODO: Connections Density
 
-    private CSPGraphColoring gcCSP;
+    private GraphColoringCSP gcCSP;
 
     [Header("Visualization")]
     [SerializeField]
@@ -81,8 +81,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
     [SerializeField]
     private bool solve;
 
-    [SerializeField]
-    private bool step;
+    public bool Step;
+    public bool IsPaused;
 
     // TODO IDEA use generated sphere or GPU sphere
     // Dictionary stores nodes ids in nodearray (sprites)
@@ -152,6 +152,7 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         if (solve)
         {
             solve = false;
+            // TODO: Algorithm classes, "default" and distributed (uses agents)
             if (algorithm != Algorithm.ABT)
                 gcCSP.Solve();
             else
@@ -162,18 +163,21 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
                     agents[i] = nodes[i].gameObject;
                 }
 
-                gcCSP.SolveWithAgents(agents);
+                gcCSP.SolveWithAgents(agents, graphSeed);
             }
 
             OnValidate();
         }
 
-        if (step)
+        // TODO: Call OnValidate each t seconds or f frames
+        if (Step)
         {
-            step = false;
-            gcCSP.Step();
+            Step = false;
+            //Debug.Log("<color=blue>PAUSED</color>");
+            //IsPaused = true;
             OnValidate();
         }
+        
     }
 
     private void Awake()
@@ -210,7 +214,7 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
             Color.red,
             Color.white,
             Color.yellow,
-            new Color(255, 165, 0, 255) / 255f
+            new Color(255f / 255f, 165f / 255f, 0f / 255f, 255f / 255f) 
         };
 
         List<Color> colorsDomain = new List<Color>();
@@ -238,7 +242,7 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         // TODO: Create graph from SO and pass it to CSP
 
         // Graph coloring 
-        gcCSP = new CSPGraphColoring(
+        gcCSP = new GraphColoringCSP(
             variables, domains, density, graphSeed
         );
     }

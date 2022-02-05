@@ -7,6 +7,9 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private GameObject fpsPanel;
 
+    [SerializeField]
+    private GraphColoringCSPVisualizer visualizer;
+
     private InputActions actions;
 
     private bool actionsSetup;
@@ -27,6 +30,7 @@ public class InputManager : MonoBehaviour
     {
         actions = new InputActions();
         actions.Default.FPS.performed += ToggleFPSCounter;
+        actions.Default.Step.performed += PerformStep;
 
         actionsSetup = true;
     }
@@ -34,5 +38,10 @@ public class InputManager : MonoBehaviour
     private void ToggleFPSCounter(CallbackContext ctx)
     {
         fpsPanel.SetActive(!fpsPanel.activeSelf);
+    }
+
+    private void PerformStep(CallbackContext ctx)
+    {
+        visualizer.IsPaused = false;
     }
 }
