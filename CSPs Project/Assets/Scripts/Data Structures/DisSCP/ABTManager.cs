@@ -2,36 +2,39 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 // Handles Asynchronous Backtracking and its agents
-public class ABTManager<T>
+public class ABTManager<T> : DiSCPManager<T>
 {
-    protected static System.Random rng = new System.Random();
+    public ABTManager(CSP<T> CSP) : base(CSP) {}
 
-    public CSP<T> CSP { get; private set; }
-
-    // Manager stores direct references to ABTAgents
+    // TODO: How to move this to DiSCPManager class as a generic type dictionary
     public Dictionary<string, ABTAgent<T>> AgentsIndex;
 
-    public bool Stopped { get; private set; }
-
-    public bool FoundSolution { get; private set; }
-
-    public ABTManager(CSP<T> CSP) 
+    public override void InitializeIndex()
     {
-        this.CSP = CSP;
         AgentsIndex = new Dictionary<string, ABTAgent<T>>();
     }
 
-    public ABTAgent<T> AddAgent(string varID, int priority)
+    public override DiSCPAgent<T> AddAgent(string id, int priority = 0)
     {
-        ABTAgent<T> agent = new ABTAgent<T>(this, varID, priority);
-        AgentsIndex.Add(varID, agent);
+        ABTAgent<T> agent = new ABTAgent<T>(this, id, priority);
+        AgentsIndex.Add(id, agent);
 
         return agent;
     }
 
-    public void Start(string seed)
+    public ABTAgent<T> GetAgent(string id)
+    {
+        return AgentsIndex[id];
+    }
+
+    public override void InitializeAgent(string id)
+    {
+        GetAgent(id).AssignRandom(rng);
+        GetAgent(id).SendOK();
+    }
+
+    public override void Start(string seed)
     {
         rng = new System.Random(seed.GetHashCode());
 
@@ -39,24 +42,16 @@ public class ABTManager<T>
         FoundSolution = false;
 
         // Start with random value
-        foreach (ABTAgent<T> a in AgentsIndex.Values)
+        foreach (DiSCPAgent<T> a in AgentsIndex.Values)
         {
-            a.AssignRandom(rng);
-            a.SendOK();
+            InitializeAgent(a.ID);
         }
     }
 
-    /// <summary>
-    /// Sends a message from agent to other according to condition function
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="recipients"></param>
-    /// <param name="condition"></param>
-    /// <returns>Number of messages sent</returns>
-    public int SendMessage(
-        ABTAgent<T>.ABTMessage message,
-        ABTAgent<T> sender, List<string> recipients, 
-        Func<ABTAgent<T>, ABTAgent<T>, bool> condition = null)
+    public override int SendMessage(
+        DiSCPAgentMessage<T> message,
+        DiSCPAgent<T> sender, List<string> recipients,
+        Func<DiSCPAgent<T>, DiSCPAgent<T>, bool> condition = null)
     {
         int counter = 0;
         foreach (string r in recipients)
@@ -64,8 +59,12 @@ public class ABTManager<T>
             if (condition == null || condition(sender, AgentsIndex[r]))
             {
                 Debug.Log(sender.ID + " (P:" + sender.Priority + ")"
-                    + " sent " + message.Print() + " to " 
+                    + " sent " + message.Print(false) + " to "
                     + AgentsIndex[r].ID + " (P:" + AgentsIndex[r].Priority + ")");
+
+                // Only print nogood for debugging
+                if (message.Type == DiSCPAgentMessage<T>.MessageType.NOGOOD)
+                    Debug.Log(message.PrintContents());
 
                 AgentsIndex[r].ReceiveMessage(message);
                 counter++;
@@ -75,113 +74,43 @@ public class ABTManager<T>
         return counter;
     }
 
-    public bool IsConsistentWithMe(ABTAgent<T> checker, T value)
+    public override uint CountInconsistencies(string id, T value)
     {
-        bool consistent = true;
+        uint inconsistencies = 0;
+
+        ABTAgent<T> checker = GetAgent(id);
 
         // AGENT WITH VIEW: Check constraints with neighbors that can be checked
-        foreach (var v in checker.View)
-        {
-            var constraints = CSP.GetConstraintsFromTo(checker.ID, v.varID);
-            if (constraints.Count > 0) Debug.Log("Checking (" + checker.ID + "," + value + " with (" + v.varID + "," + v.value + ") constraints: " + (constraints.Count));
+        inconsistencies += CheckView(checker, value);
 
-            // Check that every shared constraint is valid
-            foreach (var c in constraints)
+        // TEST: Check only nogoods with this value included
+        List<List<DiSCPAgentViewTuple<T>>> toCheck = new List<List<DiSCPAgentViewTuple<T>>>();
+        foreach (List<DiSCPAgentViewTuple<T>> ng in checker.NoGoods)
+        {
+            foreach (DiSCPAgentViewTuple<T> tuple in ng)
             {
-                consistent = c.Check(new T[] { value, v.value });
-                if (!consistent)
-                {
-                    Debug.Log("INCONSISTENCE FOUND " + c.variableIDs[0] + " " + c.variableIDs[1]);
-                    return false;
-                }
+                if (tuple.ID == checker.ID) toCheck.Add(new List<DiSCPAgentViewTuple<T>>() { tuple });
             }
         }
-
-        // NEIGHBORS WITH NEIGHBORS: Check constraints between variables in view
-        /*foreach (var v1 in checker.View)
-        {
-            foreach (var v2 in checker.View)
-            {
-                if (!v1.Equals(v2))
-                {
-                    var constraints = CSP.GetConstraintsFromTo(v1.varID, v2.varID);
-                    if (constraints.Count > 0) Debug.Log("Checking (" + v1.varID + "," + v1.value + " with (" + v2.varID + "," + v2.value + ") constraints: " + (constraints.Count));
-                    foreach (var c in constraints)
-                    {
-                        consistent = c.Check(new T[] { v1.value, v2.value });
-                        if (!consistent) return false;
-                    }
-                }
-            }
-        }*/
 
         // NOGOODS
-        foreach (var pairs in checker.NoGoods)
-        {
-            foreach (var ng in pairs)
-            {
-                // Get shared constraints with nogood variable
-                Debug.Log("Checking NOGOOD PAIR (" + ng.varID + "," + ng.value + ") with own value (" + checker.ID + "," + checker.value + ")");
-                if (ng.varID == checker.ID && ng.value.Equals(checker.value)) return false;
+        inconsistencies += CheckNoGoods(checker, value
+            , toCheck
+            );
 
-                var constraints = CSP.GetConstraintsFromTo(checker.ID, ng.varID);
-                foreach (var c in constraints)
-                {
-                    // Assure that combination is not valid (breaks constraint)
-                    consistent = !c.Check(new T[] { value, ng.value });
-                    if (!consistent)
-                    {
-                        Debug.Log("NO GOOD PROBLEM");
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
+        return inconsistencies;
     }
 
-    public bool AssignFirstConsistent(ABTAgent<T> checker)
-    {
-        Debug.Log(checker.ID + " trying to find value in domain.");
-        var variable = CSP.VariablesDictionary[checker.ID];
-
-        // Check every element in domain until one is consistent
-        foreach (T v in variable.domain)
-        {
-            if (!v.Equals(checker.value))
-            {
-                if (IsConsistentWithMe(checker, v))
-                {
-                    CSP.AssignValue(checker.ID, v);
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public void Stop()
-    {
-        Stopped = true;
-        foreach (ABTAgent<T> agent in AgentsIndex.Values)
-        {
-            agent.Stop();
-        }
-    }
-
-    public void AddNeighbors(string a1ID, string a2ID)
-    {
-        //CSP.Constraints
-    }
-
-    public void CheckSolutionFound()
+    public override void CheckSolutionFound()
     {
         bool found = true;
-        foreach (ABTAgent<T> agent in AgentsIndex.Values)
+        foreach (DiSCPAgent<T> agent in AgentsIndex.Values)
         {
-            found = agent.Consistent;
+            if (!agent.Consistent)
+            {
+                found = false;
+                break;
+            }
         }
 
         if (found)
@@ -189,5 +118,24 @@ public class ABTManager<T>
             Debug.Log("Solution found!");
             Stop();
         }
+    }
+
+    public override void Stop()
+    {
+        Stopped = true;
+        foreach (DiSCPAgent<T> agent in AgentsIndex.Values)
+        {
+            agent.Stop();
+        }
+    }
+
+    public override void AddNeighbors(string a1ID, string a2ID)
+    {
+        //throw new NotImplementedException();
+    }
+
+    public override bool AssignValue(string aID, bool checkConsistency = true)
+    {
+        throw new NotImplementedException();
     }
 }

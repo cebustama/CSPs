@@ -72,9 +72,9 @@ public class GraphColoringCSP : CSP<Color>
         AddConstraint(vars, CheckNotEqual);
     }
 
-    public DirectedConstraint<Color> GetPairConstraint(string v1, string v2)
+    public BinaryConstraint<Color> GetPairConstraint(string v1, string v2)
     {
-        foreach (DirectedConstraint<Color> c in Constraints)
+        foreach (BinaryConstraint<Color> c in Constraints)
         {
             if (c.v1 == v1 && c.v2 == v2) return c;
         }
@@ -85,7 +85,7 @@ public class GraphColoringCSP : CSP<Color>
     // Only add binary constraints in this problem
     protected override void AddConstraint(string[] variables, Func<Color[], bool> condition)
     {
-        DirectedConstraint<Color> dirC = new DirectedConstraint<Color>(variables, condition);
+        BinaryConstraint<Color> dirC = new BinaryConstraint<Color>(variables, condition);
         Constraints.Add(dirC);
         IndexConstraint(variables, dirC);
     }
@@ -124,7 +124,8 @@ public class GraphColoringCSP : CSP<Color>
 
         // TODO: Decide here wheter to send this csp or a new copy
 
-        SolveABT(this, agents, watch, seed);
+        //SolveABT(this, agents, watch, seed);
+        SolveAWCS(this, agents, seed);
     }
 
     // TODO: Create visualizer class
@@ -254,7 +255,7 @@ public class GraphColoringCSP : CSP<Color>
     /// <param name="csp"></param>
     /// <param name="agentObjects"></param>
     /// <param name="watch"></param>
-    public void SolveABT(CSP<Color> csp, GameObject[] agentObjects, Stopwatch watch, string seed)
+    public void SolveABT(CSP<Color> csp, GameObject[] agentObjects, string seed)
     {
         // TODO: TODA ESTA PARTE, hay que ordenar las variables y luego los agentes, o al mismo tiempo de alguna forma
         // Order variables
@@ -274,11 +275,38 @@ public class GraphColoringCSP : CSP<Color>
         for (int i = 0; i < orderedVariables.Count; i++)
         {
             // Create Agent
-            ABTAgent<Color> ABTAgent = manager.AddAgent(orderedVariables[i].name, orderedVariables.Count - i);
+            var ABTAgent = manager.AddAgent(orderedVariables[i].name, orderedVariables.Count - i);
 
             // Add component to gameobject and setup
             GraphColoringABTAgent agentBehaviour = orderedAgents[i].AddComponent<GraphColoringABTAgent>();
-            agentBehaviour.Setup(ABTAgent);
+            agentBehaviour.Setup(manager, ABTAgent.ID);
+        }
+
+        manager.Start(seed);
+    }
+
+    public void SolveAWCS(CSP<Color> csp, GameObject[] agentObjects, string seed)
+    {
+        // Order variables
+        List<CSPVariable<Color>> orderedVariables = OrderVariables(vars =>
+        {
+            //return vars.OrderByDescending(a => Graph.Degree(Graph.GetVertex(a.name))).ToList();
+            return vars;
+        });
+
+        // Order agentObjects according to variable ids
+        List<GameObject> orderedAgents = agentObjects.ToList();
+
+        // Create ABT manager
+        AWCSManager<Color> manager = new AWCSManager<Color>(csp);
+        for (int i = 0; i < orderedVariables.Count; i++)
+        {
+            // Create Agent
+            var AWCSAgent = manager.AddAgent(orderedVariables[i].name, orderedVariables.Count - i);
+
+            // Add component to gameobject and setup
+            GraphColoringAWCSAgent agentBehaviour = orderedAgents[i].AddComponent<GraphColoringAWCSAgent>();
+            agentBehaviour.Setup(manager, AWCSAgent.ID);
         }
 
         manager.Start(seed);

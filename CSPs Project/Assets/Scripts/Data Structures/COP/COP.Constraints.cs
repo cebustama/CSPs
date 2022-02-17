@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public partial class CSP<T>
+public partial class COP<T>
 {
     /// <summary>
     /// Single Constraint for this CSP
@@ -9,13 +9,13 @@ public partial class CSP<T>
     /// </summary>
     /// <typeparam name="C">Type of variables being compared in condition</typeparam>
     [Serializable]
-    public class CSPConstraint<C>
+    public class COPConstraint<C>
     {
         public string[] variableIDs;
 
         public Func<C[], bool> condition;
 
-        public CSPConstraint(string[] variableIDs, Func<C[], bool> condition)
+        public COPConstraint(string[] variableIDs, Func<C[], bool> condition)
         {
             this.variableIDs = variableIDs;
             this.condition = condition;
@@ -31,7 +31,7 @@ public partial class CSP<T>
     /// Constraint between two variables
     /// </summary>
     /// <typeparam name="C"></typeparam>
-    public class BinaryConstraint<C> : CSPConstraint<C>
+    public class BinaryConstraint<C> : COPConstraint<C>
     {
         public string v1 { get; private set; }
         public string v2 { get; private set; }

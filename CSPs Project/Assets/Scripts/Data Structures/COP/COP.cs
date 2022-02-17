@@ -2,25 +2,24 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-// TODO Implementar COP y convertir CSP en una versión especial de COP con restricciones duras
 
 using UnityEngine;
 
 [Serializable]
 /// <summary>
-/// Constraint satisfaction problem
+/// Constraint Optimization Problem
 /// </summary>
 /// <typeparam name="T">Datatype of value (variable of concrete domain)</typeparam>
-public partial class CSP<T>
+public partial class COP<T>
 {
     protected static System.Random rng = new System.Random();
 
     /// <summary>
-    /// Single instance of a variable for this CSP
+    /// Single instance of a variable for this COP
     /// </summary>
-    /// <typeparam name="V">Datatype of value, same as CSP</typeparam>
+    /// <typeparam name="V">Datatype of value, same as COP</typeparam>
     [Serializable]
-    public class CSPVariable<V>
+    public class COPVariable<V>
     {
         public string name; // Unique Identifier
         public List<V> domain; // Use list in case of variable domains
@@ -51,23 +50,23 @@ public partial class CSP<T>
         }
     }
 
-    public CSPVariable<T>[] Variables { get; private set; }
+    public COPVariable<T>[] Variables { get; private set; }
     // TODO: Store index instead of variable
-    public Dictionary<string, CSPVariable<T>> VariablesDictionary { get; private set; }
+    public Dictionary<string, COPVariable<T>> VariablesDictionary { get; private set; }
 
-    public List<CSPConstraint<T>> Constraints { get; private set; }
+    public List<COPConstraint<T>> Constraints { get; private set; }
     // TODO: Store index instead of constraint
-    public Dictionary<string, List<CSPConstraint<T>>> ConstraintsDictionary { get; private set; }
+    public Dictionary<string, List<COPConstraint<T>>> ConstraintsDictionary { get; private set; }
 
     public uint NumColors { get; private set; }
 
-    public CSP(string[] names, T[][] domains, T defaultValue = default(T))
+    public COP(string[] names, T[][] domains, T defaultValue = default(T))
     {
-        Variables = new CSPVariable<T>[names.Length];
-        VariablesDictionary = new Dictionary<string, CSPVariable<T>>();
+        Variables = new COPVariable<T>[names.Length];
+        VariablesDictionary = new Dictionary<string, COPVariable<T>>();
         for (int i = 0; i < Variables.Length; i++)
         {
-            Variables[i] = new CSPVariable<T>()
+            Variables[i] = new COPVariable<T>()
             {
                 name = names[i],
                 domain = domains[i].ToList(),
@@ -77,8 +76,8 @@ public partial class CSP<T>
             VariablesDictionary.Add(Variables[i].name, Variables[i]);
         }
 
-        Constraints = new List<CSPConstraint<T>>();
-        ConstraintsDictionary = new Dictionary<string, List<CSPConstraint<T>>>();
+        Constraints = new List<COPConstraint<T>>();
+        ConstraintsDictionary = new Dictionary<string, List<COPConstraint<T>>>();
 
         NumColors = 0;
     }
@@ -92,29 +91,29 @@ public partial class CSP<T>
 
     protected virtual void AddConstraint(string[] variables, Func<T[], bool> condition)
     {
-        CSPConstraint<T> constraint = new CSPConstraint<T>(variables, condition);
+        COPConstraint<T> constraint = new COPConstraint<T>(variables, condition);
         Constraints.Add(constraint);
         IndexConstraint(variables, constraint);
     }
 
-    protected virtual void IndexConstraint(string[] variables, CSPConstraint<T> constraint)
+    protected virtual void IndexConstraint(string[] variables, COPConstraint<T> constraint)
     {
         // Store constraints associated with each variable
         foreach (string v in variables)
         {
             if (!ConstraintsDictionary.ContainsKey(v))
-                ConstraintsDictionary.Add(v, new List<CSPConstraint<T>>());
+                ConstraintsDictionary.Add(v, new List<COPConstraint<T>>());
 
             ConstraintsDictionary[v].Add(constraint);
         }
     }
 
-    public List<CSPConstraint<T>> GetConstraintsFromTo(string v1, string v2)
+    public List<COPConstraint<T>> GetConstraintsFromTo(string v1, string v2)
     {
-        List<CSPConstraint<T>> constraints = new List<CSPConstraint<T>>();
+        List<COPConstraint<T>> constraints = new List<COPConstraint<T>>();
 
         // One way
-        foreach (CSPConstraint<T> c in ConstraintsDictionary[v1])
+        foreach (COPConstraint<T> c in ConstraintsDictionary[v1])
         {
             if (c.variableIDs.Contains(v2)) constraints.Add(c);
         }
@@ -125,10 +124,10 @@ public partial class CSP<T>
     public virtual void Solve() { }
 
     public virtual void SolveWithAgents(GameObject[] agents, string seed) { }
-        
+
     public virtual void Step() { }
 
-    public virtual List<CSPVariable<T>> OrderVariables(Func<List<CSPVariable<T>>, List<CSPVariable<T>>> orderingMethod)
+    public virtual List<COPVariable<T>> OrderVariables(Func<List<COPVariable<T>>, List<COPVariable<T>>> orderingMethod)
     {
         return orderingMethod(Variables.ToList());
     }
@@ -192,7 +191,7 @@ public partial class CSP<T>
 
         //Debug.Log("Checking " + varID + " with value " + value.ToString() + " for " + ConstraintsDictionary[varID].Count + " constraints.");
         // Check all constraints that involve variable
-        foreach (CSPConstraint<T> c in ConstraintsDictionary[varID])
+        foreach (COPConstraint<T> c in ConstraintsDictionary[varID])
         {
             T[] values = new T[c.variableIDs.Length];
             // Get involved variables and store involved values, except the one being tested

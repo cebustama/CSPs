@@ -100,4 +100,5 @@ public class NodeController : MonoBehaviour
     }
 
     // TODO: Delegates/Events for on hover, on click, on mouse enter/exit
+    // Create NodeInput Class
 }

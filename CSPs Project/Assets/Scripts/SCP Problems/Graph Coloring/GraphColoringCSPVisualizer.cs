@@ -5,6 +5,8 @@ using Unity.Mathematics;
 using static Unity.Mathematics.math;
 using System.Collections.Generic;
 
+using TMPro;
+
 // Visualizes CSP logic graph where connections = constraints between variables
 // TOOD: Rename to GraphColoringController, move all rendering logic to GraphColoringRenderer
 public class GraphColoringCSPVisualizer : MonoBehaviour
@@ -22,14 +24,13 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
     private float density = .5f;
 
     [SerializeField]
-    private int numColors;
+    private uint numColors;
 
     [SerializeField]
     private bool generate;
 
     // TODO: Configurable node number
     // TODO: Different Domains
-    // TODO: Connections Density
 
     private GraphColoringCSP gcCSP;
 
@@ -55,6 +56,9 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
     [SerializeField, Range(0, 360)]
     private int initialAngleOffset = 0;
 
+    [SerializeField]
+    private TextMeshProUGUI colorsText;
+
     public enum Ordering
     {
         None,
@@ -66,7 +70,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
     {
         Greedy,
         AssignValueBT,
-        ABT
+        ABT,
+        AWCS
     }
 
     [Header("Solving")]
@@ -153,17 +158,21 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         {
             solve = false;
             // TODO: Algorithm classes, "default" and distributed (uses agents)
-            if (algorithm != Algorithm.ABT)
+            if (algorithm != Algorithm.ABT && algorithm != Algorithm.AWCS)
                 gcCSP.Solve();
             else
             {
+                // Use node GameObjects as Agents
                 GameObject[] agents = new GameObject[nodes.Length];
                 for (int i = 0; i < agents.Length; i++)
                 {
                     agents[i] = nodes[i].gameObject;
                 }
 
-                gcCSP.SolveWithAgents(agents, graphSeed);
+                if (algorithm == Algorithm.ABT)
+                    gcCSP.SolveABT(gcCSP, agents, graphSeed);
+                else if (algorithm == Algorithm.AWCS)
+                    gcCSP.SolveAWCS(gcCSP, agents, graphSeed);
             }
 
             OnValidate();
@@ -245,6 +254,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         gcCSP = new GraphColoringCSP(
             variables, domains, density, graphSeed
         );
+
+        gcCSP.SetNumColors(numColors);
     }
 
     // TODO: Move all this to other class
@@ -283,6 +294,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
             nodeIndices.Add(varName, i);
         }
 
+        AssignMatchingColors();
+
         // Connections (constraints)
         connectionsContainer = new GameObject("Connections").transform;
         connectionsContainer.SetParent(transform);
@@ -291,7 +304,7 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         connections = new List<Connection>();
         for (int i = 0; i < gcCSP.Constraints.Count; i++)
         {
-            var c = (CSP<Color>.DirectedConstraint<Color>) gcCSP.Constraints[i];
+            var c = (CSP<Color>.BinaryConstraint<Color>) gcCSP.Constraints[i];
 
             // Avoid duplicate connections
             string inverseConnectionID = c.v2 + c.v1;
@@ -311,6 +324,14 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
             connections.Add(connection);
 
             connectionsIndices.Add(connection.GetID(), i);
+        }
+    }
+
+    private void AssignMatchingColors()
+    {
+        foreach (var n in nodes)
+        {
+            //n.NodeMaterial.color = lineGradient.Evaluate(UnityEngine.Random.Range(0f, 1f));
         }
     }
 
@@ -334,6 +355,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         {
             UpdateConnection(i);
         }
+
+        UpdateUI();
     }
 
     private void UpdateNode(int i)
@@ -378,6 +401,17 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         connections[i].lr.material = lineMaterial;
 
         connections[i].lr.colorGradient = lineGradient;
+    }
+
+    private void UpdateUI()
+    {
+        if (gcCSP == null) return;
+
+        string info =
+            "Num Nodes: " + gcCSP.Variables.Length + "\n"
+            + "Num Colors: " + gcCSP.GetDifferentValues().Count.ToString();
+
+        colorsText.SetText(info);
     }
 
     #endregion

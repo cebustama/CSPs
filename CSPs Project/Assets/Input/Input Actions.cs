@@ -33,6 +33,14 @@ public class @InputActions : IInputActionCollection, IDisposable
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""Zoom"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""aaf4c300-e9d4-444a-962a-8dba1ed1a5d6"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -42,7 +50,7 @@ public class @InputActions : IInputActionCollection, IDisposable
                     ""path"": ""<Keyboard>/f"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": ""Keyboard"",
+                    ""groups"": ""Keyboard + Mouse"",
                     ""action"": ""FPS"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
@@ -57,17 +65,33 @@ public class @InputActions : IInputActionCollection, IDisposable
                     ""action"": ""Step"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""73a5f66c-104f-4ac0-9cd0-34f299e616ab"",
+                    ""path"": ""<Mouse>/scroll/y"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Zoom"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
     ],
     ""controlSchemes"": [
         {
-            ""name"": ""Keyboard"",
-            ""bindingGroup"": ""Keyboard"",
+            ""name"": ""Keyboard + Mouse"",
+            ""bindingGroup"": ""Keyboard + Mouse"",
             ""devices"": [
                 {
                     ""devicePath"": ""<Keyboard>"",
+                    ""isOptional"": false,
+                    ""isOR"": false
+                },
+                {
+                    ""devicePath"": ""<Mouse>"",
                     ""isOptional"": false,
                     ""isOR"": false
                 }
@@ -79,6 +103,7 @@ public class @InputActions : IInputActionCollection, IDisposable
         m_Default = asset.FindActionMap("Default", throwIfNotFound: true);
         m_Default_FPS = m_Default.FindAction("FPS", throwIfNotFound: true);
         m_Default_Step = m_Default.FindAction("Step", throwIfNotFound: true);
+        m_Default_Zoom = m_Default.FindAction("Zoom", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -130,12 +155,14 @@ public class @InputActions : IInputActionCollection, IDisposable
     private IDefaultActions m_DefaultActionsCallbackInterface;
     private readonly InputAction m_Default_FPS;
     private readonly InputAction m_Default_Step;
+    private readonly InputAction m_Default_Zoom;
     public struct DefaultActions
     {
         private @InputActions m_Wrapper;
         public DefaultActions(@InputActions wrapper) { m_Wrapper = wrapper; }
         public InputAction @FPS => m_Wrapper.m_Default_FPS;
         public InputAction @Step => m_Wrapper.m_Default_Step;
+        public InputAction @Zoom => m_Wrapper.m_Default_Zoom;
         public InputActionMap Get() { return m_Wrapper.m_Default; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -151,6 +178,9 @@ public class @InputActions : IInputActionCollection, IDisposable
                 @Step.started -= m_Wrapper.m_DefaultActionsCallbackInterface.OnStep;
                 @Step.performed -= m_Wrapper.m_DefaultActionsCallbackInterface.OnStep;
                 @Step.canceled -= m_Wrapper.m_DefaultActionsCallbackInterface.OnStep;
+                @Zoom.started -= m_Wrapper.m_DefaultActionsCallbackInterface.OnZoom;
+                @Zoom.performed -= m_Wrapper.m_DefaultActionsCallbackInterface.OnZoom;
+                @Zoom.canceled -= m_Wrapper.m_DefaultActionsCallbackInterface.OnZoom;
             }
             m_Wrapper.m_DefaultActionsCallbackInterface = instance;
             if (instance != null)
@@ -161,22 +191,26 @@ public class @InputActions : IInputActionCollection, IDisposable
                 @Step.started += instance.OnStep;
                 @Step.performed += instance.OnStep;
                 @Step.canceled += instance.OnStep;
+                @Zoom.started += instance.OnZoom;
+                @Zoom.performed += instance.OnZoom;
+                @Zoom.canceled += instance.OnZoom;
             }
         }
     }
     public DefaultActions @Default => new DefaultActions(this);
-    private int m_KeyboardSchemeIndex = -1;
-    public InputControlScheme KeyboardScheme
+    private int m_KeyboardMouseSchemeIndex = -1;
+    public InputControlScheme KeyboardMouseScheme
     {
         get
         {
-            if (m_KeyboardSchemeIndex == -1) m_KeyboardSchemeIndex = asset.FindControlSchemeIndex("Keyboard");
-            return asset.controlSchemes[m_KeyboardSchemeIndex];
+            if (m_KeyboardMouseSchemeIndex == -1) m_KeyboardMouseSchemeIndex = asset.FindControlSchemeIndex("Keyboard + Mouse");
+            return asset.controlSchemes[m_KeyboardMouseSchemeIndex];
         }
     }
     public interface IDefaultActions
     {
         void OnFPS(InputAction.CallbackContext context);
         void OnStep(InputAction.CallbackContext context);
+        void OnZoom(InputAction.CallbackContext context);
     }
 }

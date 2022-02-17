@@ -10,6 +10,10 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private GraphColoringCSPVisualizer visualizer;
 
+    [Header("Settings")]
+    [SerializeField]
+    private float zoomSpeed = 1f;
+
     private InputActions actions;
 
     private bool actionsSetup;
@@ -31,6 +35,7 @@ public class InputManager : MonoBehaviour
         actions = new InputActions();
         actions.Default.FPS.performed += ToggleFPSCounter;
         actions.Default.Step.performed += PerformStep;
+        //actions.Default.Zoom.performed += HandleZoom;
 
         actionsSetup = true;
     }
@@ -43,5 +48,25 @@ public class InputManager : MonoBehaviour
     private void PerformStep(CallbackContext ctx)
     {
         visualizer.IsPaused = false;
+    }
+
+    private void HandleZoom(CallbackContext ctx)
+    {
+        float z = ctx.ReadValue<float>();
+        
+        if (Camera.main.orthographic)
+        {
+            if (z > 0)
+                Camera.main.orthographicSize -= zoomSpeed;
+            else if (z < 0)
+                Camera.main.orthographicSize += zoomSpeed;
+        }
+        else
+        {
+            if (z > 0)
+                Camera.main.transform.position += Vector3.forward * zoomSpeed;
+            else if (z < 0)
+                Camera.main.transform.position -= Vector3.forward * zoomSpeed;
+        }
     }
 }
