@@ -157,6 +157,9 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         if (solve)
         {
             solve = false;
+
+            Debug.Log("csp: " + gcCSP);
+
             // TODO: Algorithm classes, "default" and distributed (uses agents)
             if (algorithm != Algorithm.ABT && algorithm != Algorithm.AWCS)
                 gcCSP.Solve();
@@ -168,6 +171,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
                 {
                     agents[i] = nodes[i].gameObject;
                 }
+
+                Debug.Log("agents " + agents.Length);
 
                 if (algorithm == Algorithm.ABT)
                     gcCSP.SolveABT(gcCSP, agents, graphSeed);
@@ -274,7 +279,7 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         nodesContainer.SetParent(transform);
         for (int i = 0; i < nodes.Length; i++)
         {
-            string varName = gcCSP.Variables[i].name;
+            string varName = gcCSP.VariableNames[gcCSP.Variables[i].id];
 
             // Create node
             NodeController node = Instantiate(nodePrefab).GetComponent<NodeController>();

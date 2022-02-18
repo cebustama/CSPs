@@ -76,14 +76,14 @@ public class AWCSManager<T> : DiSCPManager<T>
 
         // AGENT WITH VIEW: Check constraints with neighbors WITH HIGHER PRIORITY
         if (higherView[0].Count > 0) inconsistencies += CheckView(checker, value, higherView[0]);
-        else Debug.Log("<color=cyan>" + checker.ID + " has no variables in view of higher priority." + "</color>");
+        else Debug.Log("<color=cyan>" + checker.Name + " has no variables in view of higher priority." + "</color>");
 
         // Obtain list of agents in NOGOODS with lower priorities
         List<List<DiSCPAgentViewTuple<T>>> higherNoGoods = GetHigherAgents(checker, checker.NoGoods);
 
         // NOGOODS
         if (higherNoGoods.Count > 0) inconsistencies += CheckNoGoods(checker, value);
-        else Debug.Log("<color=cyan>" + checker.ID + " has no variables in no good list of lower priority." + "</color>");
+        else Debug.Log("<color=cyan>" + checker.Name + " has no variables in no good list of lower priority." + "</color>");
 
         Debug.Log("Inconsistencies: " + inconsistencies);
 
@@ -107,16 +107,16 @@ public class AWCSManager<T> : DiSCPManager<T>
             foreach (var tuple in tupleList)
             {
                 // Compare priorities
-                if (AgentsIndex[tuple.ID].Priority > checker.Priority)
+                if (AgentsIndex[tuple.Name].Priority > checker.Priority)
                 {
                     candidates[candidates.Count - 1].Add(tuple);
                     continue;
                 }
 
                 // If same priority, compare alphabetically
-                if (AgentsIndex[tuple.ID].Priority == checker.Priority)
+                if (AgentsIndex[tuple.Name].Priority == checker.Priority)
                 {
-                    if (string.Compare(tuple.ID, checker.ID,
+                    if (string.Compare(tuple.Name, checker.Name,
                         StringComparison.CurrentCultureIgnoreCase) > 0)
                     {
                         candidates[candidates.Count - 1].Add(tuple);
@@ -146,16 +146,16 @@ public class AWCSManager<T> : DiSCPManager<T>
             foreach (var tuple in tupleList)
             {
                 // Compare priorities
-                if (AgentsIndex[tuple.ID].Priority < checker.Priority)
+                if (AgentsIndex[tuple.Name].Priority < checker.Priority)
                 {
                     candidates[candidates.Count - 1].Add(tuple);
                     continue;
                 }
 
                 // If same priority, compare alphabetically
-                if (AgentsIndex[tuple.ID].Priority == checker.Priority)
+                if (AgentsIndex[tuple.Name].Priority == checker.Priority)
                 {
-                    if (string.Compare(tuple.ID, checker.ID,
+                    if (string.Compare(tuple.Name, checker.Name,
                         StringComparison.CurrentCultureIgnoreCase) < 0)
                     {
                         candidates[candidates.Count - 1].Add(tuple);
@@ -176,9 +176,9 @@ public class AWCSManager<T> : DiSCPManager<T>
         {
             if (condition == null || condition(sender, AgentsIndex[r]))
             {
-                Debug.Log(sender.ID + " (P:" + sender.Priority + ")"
+                Debug.Log(sender.Name + " (P:" + sender.Priority + ")"
                     + " sent " + message.Print(false) + " to "
-                    + AgentsIndex[r].ID + " (P:" + AgentsIndex[r].Priority + ")");
+                    + AgentsIndex[r].Name + " (P:" + AgentsIndex[r].Priority + ")");
 
                 AgentsIndex[r].ReceiveMessage(message);
                 counter++;
@@ -198,7 +198,7 @@ public class AWCSManager<T> : DiSCPManager<T>
         // Start with random value
         foreach (DiSCPAgent<T> a in AgentsIndex.Values)
         {
-            InitializeAgent(a.ID);
+            InitializeAgent(a.Name);
         }
     }
 
@@ -216,7 +216,7 @@ public class AWCSManager<T> : DiSCPManager<T>
         AWCSAgent<T> checker = AgentsIndex[aID];
 
         // Obtain CSPVariable
-        CSP<T>.CSPVariable<T> variable = CSP.VariablesDictionary[checker.ID];
+        CSP<T>.Variable<T> variable = CSP.GetVariable(checker.Name);
 
         List<T> toCheck = variable.domain;
         // Get consistent values in domain (should exclude current value)
@@ -239,7 +239,7 @@ public class AWCSManager<T> : DiSCPManager<T>
         }
 
         // Find CONSISTENT value with the least restrictions violated with lower priority neighbors
-        var allRestrictions = CSP.ConstraintsDictionary[aID];
+        var allRestrictions = CSP.ConstraintsDictionary[checker.ID];
         int minRestrictions = int.MaxValue;
         T chosenValue = default(T);
         foreach (T value in toCheck)
@@ -248,10 +248,10 @@ public class AWCSManager<T> : DiSCPManager<T>
             foreach (var restriction in allRestrictions)
             {
                 // Check every restriction shared with lower neighbors
-                if (lowerIDs.Contains(restriction.variableIDs[1]))
+                if (lowerIDs.Contains(CSP.VariableNames[restriction.variableIDs[1]]))
                 {
                     if (!restriction.Check(new T[] { value, 
-                        AgentsIndex[restriction.variableIDs[1]].value }))
+                        AgentsIndex[CSP.VariableNames[restriction.variableIDs[1]]].value }))
                     {
                         violated++;
                     }
@@ -276,16 +276,16 @@ public class AWCSManager<T> : DiSCPManager<T>
     /// <param name="options"></param>
     /// <param name="variable"></param>
     /// <returns></returns>
-    private List<T> GetConsistentValues(List<T> options, CSP<T>.CSPVariable<T> variable)
+    private List<T> GetConsistentValues(List<T> options, CSP<T>.Variable<T> variable)
     {
-        Debug.Log("<color=yellow>" + "Finding consistent values for " + variable.name + "</color>");
+        Debug.Log("<color=yellow>" + "Finding consistent values for " + CSP.VariableNames[variable.id] + "</color>");
         List<T> values = new List<T>();
         foreach (T v in options)
         {
             if (!v.Equals(variable.value)) Debug.Log("<color=yellow>" + "Trying " + v + "</color>");
 
             if (!v.Equals(variable.value) && 
-                CountInconsistencies(variable.name, v) == 0)
+                CountInconsistencies(CSP.VariableNames[variable.id], v) == 0)
             {
                 values.Add(v);
             }
@@ -297,18 +297,18 @@ public class AWCSManager<T> : DiSCPManager<T>
     private List<string> GetLowerNeighbors(AWCSAgent<T> checker)
     {
         List<string> lowerIDs = new List<string>();
-        foreach (string nID in checker.Neighbors)
+        foreach (int nID in checker.Neighbors)
         {
-            if (AgentsIndex[nID].Priority <= checker.Priority)
+            if (AgentsIndex[CSP.VariableNames[nID]].Priority <= checker.Priority)
             {
                 // If same priority, compare ID alphabetically
-                if (AgentsIndex[nID].Priority == checker.Priority)
+                if (AgentsIndex[CSP.VariableNames[nID]].Priority == checker.Priority)
                 {
-                    if (string.CompareOrdinal(nID, checker.ID) < 0)
-                        lowerIDs.Add(nID);
+                    if (string.CompareOrdinal(CSP.VariableNames[nID], checker.Name) < 0)
+                        lowerIDs.Add(CSP.VariableNames[nID]);
                 }
                 else
-                    lowerIDs.Add(nID);
+                    lowerIDs.Add(CSP.VariableNames[nID]);
             }
         }
 

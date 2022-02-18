@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +8,14 @@ using UnityEngine;
 [Serializable]
 /// <summary>
 /// Constraint Optimization Problem
+/// Tupla (X,D,R)
+/// X={X1,...,Xn} es un conjunto de variables
+/// D={d1,...,dn} es un conjunto de dominios de variables discretas y finitas.
+/// R={r1,...,rm} es un conjunto de funciones de utilidad, donde cada ri:di1×...×dik→R, 
+/// que asigna una utilidad (recompensa) a cada combinación posible de valores 
+/// de las variables. Las cantidades negativas significan costes.
 /// </summary>
-/// <typeparam name="T">Datatype of value (variable of concrete domain)</typeparam>
+/// <typeparam name="T"></typeparam>
 public partial class COP<T>
 {
     protected static System.Random rng = new System.Random();
@@ -19,11 +25,15 @@ public partial class COP<T>
     /// </summary>
     /// <typeparam name="V">Datatype of value, same as COP</typeparam>
     [Serializable]
-    public class COPVariable<V>
+    public class Variable<V>
     {
-        public string name; // Unique Identifier
-        public List<V> domain; // Use list in case of variable domains
+        public int id; // Unique Identifier
+        public List<V> domain; // Use list in case of dynamic domains
         public V value;
+
+        // Should return a utility amount for each possible assigned value
+        // TODO: Store these in utility functions array since it depends on shared restrictions?
+        public Func<V, float> utilityFunction;
 
         public void AssignRandom(System.Random rng)
         {
@@ -50,36 +60,70 @@ public partial class COP<T>
         }
     }
 
-    public COPVariable<T>[] Variables { get; private set; }
-    // TODO: Store index instead of variable
-    public Dictionary<string, COPVariable<T>> VariablesDictionary { get; private set; }
+    // Variables list
+    public Variable<T>[] Variables { get; private set; }
 
-    public List<COPConstraint<T>> Constraints { get; private set; }
+    // Store variable indices
+    // {key: hash, value: variable index in list}
+    public Dictionary<int, int> VariablesIndex { get; private set; }
+
+    // In case you want to use variable names
+    // {key: hash, value: name}
+    public Dictionary<int, string> VariableNames { get; private set; }
+
+    public List<Constraint<T>> Constraints { get; private set; }
     // TODO: Store index instead of constraint
-    public Dictionary<string, List<COPConstraint<T>>> ConstraintsDictionary { get; private set; }
+    public Dictionary<int, List<Constraint<T>>> ConstraintsDictionary { get; private set; }
 
+    // TODO: Should not be here, change to NumDifferentValues or something
     public uint NumColors { get; private set; }
 
     public COP(string[] names, T[][] domains, T defaultValue = default(T))
     {
-        Variables = new COPVariable<T>[names.Length];
-        VariablesDictionary = new Dictionary<string, COPVariable<T>>();
+        Variables = new Variable<T>[names.Length];
+        VariablesIndex = new Dictionary<int, int>();
+        VariableNames = new Dictionary<int, string>();
         for (int i = 0; i < Variables.Length; i++)
         {
-            Variables[i] = new COPVariable<T>()
+            Variables[i] = new Variable<T>()
             {
-                name = names[i],
+                id = names[i].GetHashCode(),
                 domain = domains[i].ToList(),
                 value = defaultValue
             };
 
-            VariablesDictionary.Add(Variables[i].name, Variables[i]);
+            // Store variable index in list
+            VariablesIndex.Add(Variables[i].id, i);
+            VariableNames.Add(Variables[i].id, names[i]);
         }
 
-        Constraints = new List<COPConstraint<T>>();
-        ConstraintsDictionary = new Dictionary<string, List<COPConstraint<T>>>();
+        Constraints = new List<Constraint<T>>();
+        ConstraintsDictionary = new Dictionary<int, List<Constraint<T>>>();
+
+        // Print Variables TODO: Move to method
+        string printable = "";
+        foreach (var v in Variables)
+        {
+            printable += "V(" +
+                "id: " + v.id + " " +
+                "index: " + VariablesIndex[v.id] + " " +
+                    "(" + (Variables[VariablesIndex[v.id]].id == v.id) + ") " +
+                "name: " + VariableNames[v.id] + ")";
+        }
+        Debug.Log(printable);
 
         NumColors = 0;
+    }
+
+    public Variable<T> GetVariable(string name)
+    {
+        Debug.Log("Looking for " + name + " id:" + name.GetHashCode());
+        return Variables[VariablesIndex[name.GetHashCode()]];
+    }
+
+    public Variable<T> GetVariable(int id)
+    {
+        return Variables[VariablesIndex[id]];
     }
 
     public void SetNumColors(uint num)
@@ -89,57 +133,27 @@ public partial class COP<T>
         NumColors = num;
     }
 
-    protected virtual void AddConstraint(string[] variables, Func<T[], bool> condition)
-    {
-        COPConstraint<T> constraint = new COPConstraint<T>(variables, condition);
-        Constraints.Add(constraint);
-        IndexConstraint(variables, constraint);
-    }
-
-    protected virtual void IndexConstraint(string[] variables, COPConstraint<T> constraint)
-    {
-        // Store constraints associated with each variable
-        foreach (string v in variables)
-        {
-            if (!ConstraintsDictionary.ContainsKey(v))
-                ConstraintsDictionary.Add(v, new List<COPConstraint<T>>());
-
-            ConstraintsDictionary[v].Add(constraint);
-        }
-    }
-
-    public List<COPConstraint<T>> GetConstraintsFromTo(string v1, string v2)
-    {
-        List<COPConstraint<T>> constraints = new List<COPConstraint<T>>();
-
-        // One way
-        foreach (COPConstraint<T> c in ConstraintsDictionary[v1])
-        {
-            if (c.variableIDs.Contains(v2)) constraints.Add(c);
-        }
-
-        return constraints;
-    }
-
     public virtual void Solve() { }
 
     public virtual void SolveWithAgents(GameObject[] agents, string seed) { }
 
     public virtual void Step() { }
 
-    public virtual List<COPVariable<T>> OrderVariables(Func<List<COPVariable<T>>, List<COPVariable<T>>> orderingMethod)
+    public virtual List<Variable<T>> OrderVariables(Func<List<Variable<T>>, List<Variable<T>>> orderingMethod)
     {
         return orderingMethod(Variables.ToList());
     }
 
-    public virtual bool AssignFirstValid(string varID, bool addValuesToDomain = false, Func<T> randomFunction = null)
+    public virtual bool AssignFirstValid(string varName, bool addValuesToDomain = false, Func<T> randomFunction = null)
     {
-        foreach (T value in VariablesDictionary[varID].domain)
+        Variable<T> variable = GetVariable(varName);
+
+        foreach (T value in variable.domain)
         {
             // Found valid value in domain
-            if (IsConsistent(varID, value))
+            if (IsConsistent(varName, value))
             {
-                VariablesDictionary[varID].AssignValue(value);
+                variable.AssignValue(value);
                 return true;
             }
         }
@@ -150,22 +164,25 @@ public partial class COP<T>
             if (randomFunction == null)
                 throw new ArgumentException();
 
-            VariablesDictionary[varID].AssignValue(randomFunction());
+            variable.AssignValue(randomFunction());
         }
 
         return false;
     }
 
-    public virtual bool AssignValidOtherThan(string varID, T exception)
+    public virtual bool AssignValidOtherThan(string varName, T exception)
     {
-        List<T> randomizedDomain = VariablesDictionary[varID].domain.OrderBy(a => rng.Next()).ToList();
+        Variable<T> variable = GetVariable(varName);
+
+        List<T> randomizedDomain = variable.
+            domain.OrderBy(a => rng.Next()).ToList();
 
         foreach (T value in randomizedDomain)
         {
             // Found valid value in domain
-            if (!value.Equals(exception) && IsConsistent(varID, value))
+            if (!value.Equals(exception) && IsConsistent(varName, value))
             {
-                VariablesDictionary[varID].AssignValue(value);
+                variable.AssignValue(value);
                 return true;
             }
         }
@@ -173,36 +190,38 @@ public partial class COP<T>
         return false;
     }
 
-    public virtual void AssignRandom(string varID, System.Random rng)
+    public virtual void AssignRandom(string varName, System.Random rng)
     {
-        VariablesDictionary[varID].AssignRandom(rng);
+        GetVariable(varName).AssignRandom(rng);
     }
 
-    public virtual void AssignValue(string varID, T value)
+    public virtual void AssignValue(string varName, T value)
     {
-        VariablesDictionary[varID].AssignValue(value);
+        GetVariable(varName).AssignValue(value);
     }
 
     // Checks solution for consistency
-    public virtual bool IsConsistent(string varID, T value)
+    public virtual bool IsConsistent(string varName, T value)
     {
+        Variable<T> variable = GetVariable(varName);
+
         // Variable has no constraints
-        if (!ConstraintsDictionary.ContainsKey(varID)) return true;
+        if (!ConstraintsDictionary.ContainsKey(variable.id)) return true;
 
         //Debug.Log("Checking " + varID + " with value " + value.ToString() + " for " + ConstraintsDictionary[varID].Count + " constraints.");
         // Check all constraints that involve variable
-        foreach (COPConstraint<T> c in ConstraintsDictionary[varID])
+        foreach (Constraint<T> c in ConstraintsDictionary[variable.id])
         {
             T[] values = new T[c.variableIDs.Length];
             // Get involved variables and store involved values, except the one being tested
             for (int i = 0; i < c.variableIDs.Length; i++)
             {
                 // Tested variable
-                if (VariablesDictionary[c.variableIDs[i]].name == varID)
+                if (GetVariable(c.variableIDs[i]).id == variable.id)
                     values[i] = value;
                 // Other variables in constraint
                 else
-                    values[i] = VariablesDictionary[c.variableIDs[i]].value;
+                    values[i] = GetVariable(c.variableIDs[i]).value;
             }
 
             // Check partial solution
@@ -227,5 +246,11 @@ public partial class COP<T>
         });
 
         return different;
+    }
+
+    // TODO: Use
+    public string GetVariableName(int id)
+    {
+        return VariableNames[id];
     }
 }

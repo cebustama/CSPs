@@ -38,7 +38,7 @@ public class GraphColoringABTAgent : MonoBehaviour
     private void HandleMessage()
     {
         ABTMessage<Color> message = (ABTMessage<Color>) agent.Messages.Dequeue();
-        Debug.Log(agent.ID + " handling " + message.Print());
+        Debug.Log(agent.Name + " handling " + message.Print());
 
         switch (message.Type)
         {
@@ -51,23 +51,24 @@ public class GraphColoringABTAgent : MonoBehaviour
                 // Add to NoGoods if not already there
                 agent.AddNoGood(message.Contents);
 
-                foreach (var p in message.Contents)
+                foreach (DiSCPAgentViewTuple<Color> p in message.Contents)
                 {
                     // If variable in nogood is not a neighbor and not itself
-                    if (!agent.Neighbors.Contains(p.ID) && agent.ID != p.ID)
+                    if (!agent.Neighbors.Contains(manager.CSP.GetVariable(p.Name).id) 
+                        && agent.Name != p.Name)
                     {
                         // Add nogood pair to view
                         agent.View.Add(p);
 
                         // Ask to be added to neighbors
-                        agent.SendAddMeTo(p.ID);
+                        agent.SendAddMeTo(p.Name);
                     }
                 }
                 break;
             case DiSCPAgentMessage<Color>.MessageType.ADDME:
                 // Add as new neighbor
-                agent.AddNeighbor(message.Contents[0].ID);
-                Debug.Log(agent.ID + " added " + message.Contents[0].ID + " as a neighbor.");
+                agent.AddNeighbor(message.Contents[0].Name);
+                Debug.Log(agent.Name + " added " + message.Contents[0].Name + " as a neighbor.");
 
                 // TODO: Agregar conexiones en el grafo?
 
@@ -77,7 +78,7 @@ public class GraphColoringABTAgent : MonoBehaviour
 
     private void CheckView()
     {
-        Debug.Log("<color=cyan>===== " + agent.ID 
+        Debug.Log("<color=cyan>===== " + agent.Name 
             + " Checking view" + " =====</color>");
 
         // Check consistency with current value and View
@@ -85,7 +86,7 @@ public class GraphColoringABTAgent : MonoBehaviour
 
         if (!consistent)
         {
-            Debug.Log("<color=red>" + agent.ID + " view is inconsistent." + "</color>");
+            Debug.Log("<color=red>" + agent.Name + " view is inconsistent." + "</color>");
             // AssignFirst
             bool assigned = agent.AssignFirstConsistent();
 
@@ -94,7 +95,7 @@ public class GraphColoringABTAgent : MonoBehaviour
                 Backtrack();
             else
             {
-                Debug.Log("<color=cyan>" + agent.ID + " assigned new value " + agent.value + "</color>");
+                Debug.Log("<color=cyan>" + agent.Name + " assigned new value " + agent.value + "</color>");
                 agent.SendOK();
 
                 UpdateView();
@@ -104,7 +105,7 @@ public class GraphColoringABTAgent : MonoBehaviour
         }
         else
         {
-            Debug.Log("<color=green>" + agent.ID + " view is consistent!" + "</color>");
+            Debug.Log("<color=green>" + agent.Name + " view is consistent!" + "</color>");
             agent.SetConsistent(true);
         }
 
@@ -120,7 +121,7 @@ public class GraphColoringABTAgent : MonoBehaviour
     private void Backtrack()
     {
         Debug.Log("<color=red>" + "Couldn't find consistent values in domain, " 
-            + agent.ID + " BACKTRACKING" + "</color>");
+            + agent.Name + " BACKTRACKING" + "</color>");
         bool noSolution = !agent.SendNoGood();
 
         if (noSolution)

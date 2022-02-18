@@ -319,14 +319,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   graphSeed: jesus
-  numNodes: 100
-  density: 0.5
-  numColors: 5
+  numNodes: 5
+  density: 0.75
+  numColors: 3
   generate: 0
   nodePrefab: {fileID: 4304179420609380690, guid: 8d579b9caf054e84fb1db5633dcbbbff, type: 3}
   radius: 4
-  nodeScale: 0.4
-  lineWidth: 0.015
+  nodeScale: 1
+  lineWidth: 0.075
   lineMaterial: {fileID: 2100000, guid: 8e5278241b6b45f43ba064df5303bdfe, type: 2}
   lineGradient:
     serializedVersion: 2
@@ -359,7 +359,7 @@ MonoBehaviour:
     m_NumAlphaKeys: 2
   initialAngleOffset: 90
   colorsText: {fileID: 594827474}
-  algorithm: 2
+  algorithm: 3
   ordering: 2
   solve: 0
   Step: 0

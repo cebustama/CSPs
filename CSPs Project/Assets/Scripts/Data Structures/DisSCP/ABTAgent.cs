@@ -22,9 +22,9 @@ public class ABTAgent<T> : DiSCPAgent<T>
         abtManager.SendMessage(
             new ABTMessage<T>(
                 DiSCPAgentMessage<T>.MessageType.OK, 
-                new List<VariableValuePair<T>>() { new VariableValuePair<T>(ID, value) }
+                new List<VariableValuePair<T>>() { new VariableValuePair<T>(Name, value) }
             ),  
-            this, Neighbors, 
+            this, Neighbors.ConvertAll(nId => manager.CSP.VariableNames[nId]), 
             (a1, a2) =>
             {
                 return (a2.Priority < a1.Priority);
@@ -45,7 +45,7 @@ public class ABTAgent<T> : DiSCPAgent<T>
 
         // Obtain lowest priority variable in nogood and send view as nogood message
         string recipient = noGood.OrderBy(pair => 
-        abtManager.GetAgent(pair.ID).Priority).First().ID;
+        abtManager.GetAgent(pair.Name).Priority).First().Name;
 
         abtManager.SendMessage(
             new ABTMessage<T>(DiSCPAgentMessage<T>.MessageType.NOGOOD, noGood),
@@ -57,9 +57,9 @@ public class ABTAgent<T> : DiSCPAgent<T>
         for (int i = View.Count - 1; i >= 0; i--)
         {
             VariableValuePair<T> v = (VariableValuePair<T>)View[i];
-            if (v.ID == recipient)
+            if (v.Name == recipient)
             {
-                UnityEngine.Debug.Log("<color=magenta>" + ID + " removing " + v.ID + " from view." + "</color>");
+                UnityEngine.Debug.Log("<color=magenta>" + Name + " removing " + v.Name + " from view." + "</color>");
                 View.RemoveAt(i);
                 break;
             }
@@ -73,7 +73,7 @@ public class ABTAgent<T> : DiSCPAgent<T>
         abtManager.SendMessage(
             new ABTMessage<T>(
                 DiSCPAgentMessage<T>.MessageType.ADDME, 
-                new List<VariableValuePair<T>>() { new VariableValuePair<T>(ID, value) }
+                new List<VariableValuePair<T>>() { new VariableValuePair<T>(Name, value) }
             ),
             this, 
             new List<string>() { newID }

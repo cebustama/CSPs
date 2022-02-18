@@ -13,16 +13,19 @@ public abstract class DiSCPAgent<T>
     protected DiSCPManager<T> manager;
 
     [SerializeField]
-    public string ID { get; private set; }
+    public string Name { get; private set; }
+
+    public int ID => manager.CSP.GetVariable(Name).id;
 
     // Get value directly from CSP
-    public T value => manager.CSP.VariablesDictionary[ID].value;
+    public T value => manager.CSP.GetVariable(Name).value;
 
     [SerializeField]
     public int Priority { get; private set; }
 
+    // TODO: Save direct reference to agent for real asynchronous communication
     [SerializeField]
-    public List<string> Neighbors = new List<string>();
+    public List<int> Neighbors = new List<int>();
 
     // TODO: Should be dictionary with varID as index
     public List<DiSCPAgentViewTuple<T>> View = new List<DiSCPAgentViewTuple<T>>();
@@ -36,17 +39,20 @@ public abstract class DiSCPAgent<T>
 
     public bool Stopped { get; private set; }
 
-    public DiSCPAgent(DiSCPManager<T> manager, string iD, int priority)
+    public DiSCPAgent(DiSCPManager<T> manager, string name, int priority)
     {
         this.manager = manager;
-        ID = iD;
         Priority = priority;
+        Name = name;
+        Debug.Log("Name " + Name);
+        Debug.Log(manager.CSP.GetVariable(Name));
 
         // Obtain logical neighbors list from CSP (connected by a constraint)
         foreach (var c in manager.CSP.ConstraintsDictionary[ID])
         {
-            foreach (string v in c.variableIDs)
-                if (v != ID && !Neighbors.Contains(v)) Neighbors.Add(v);
+            Debug.Log("Adding neighbors for constraint " + c);
+            foreach (int id in c.variableIDs)
+                if (id != ID && !Neighbors.Contains(id)) Neighbors.Add(id);
         }
 
         View = new List<DiSCPAgentViewTuple<T>>();
@@ -59,7 +65,7 @@ public abstract class DiSCPAgent<T>
         {
             DiSCPAgentViewTuple<T> e = View[i];
             // Replace value and stop if already in view
-            if (e.ID == t.ID)
+            if (e.Name == t.Name)
             {
                 View[i] = t;
                 return;
@@ -72,7 +78,7 @@ public abstract class DiSCPAgent<T>
     public DiSCPAgentViewTuple<T> GetViewValue(string ID)
     {
         foreach (var tuple in View)
-            if (tuple.ID == ID) return tuple;
+            if (tuple.Name == ID) return tuple;
 
         return null;
     }
@@ -82,10 +88,10 @@ public abstract class DiSCPAgent<T>
         if (!NoGoods.Contains(contents)) NoGoods.Add(contents);
     }
 
-    public void AddNeighbor(string nID)
+    public void AddNeighbor(string name)
     {
-        if (!Neighbors.Contains(ID))
-            Neighbors.Add(nID);
+        if (!Neighbors.Contains(manager.CSP.GetVariable(name).id))
+            Neighbors.Add(manager.CSP.GetVariable(name).id);
 
         //manager.AddNeighbors(ID, nID);
     }
@@ -93,7 +99,7 @@ public abstract class DiSCPAgent<T>
     public abstract bool AssignValue(bool checkConsistency = true);
 
     public void AssignRandom(System.Random rng) => 
-        manager.CSP.AssignRandom(ID, rng);
+        manager.CSP.AssignRandom(Name, rng);
 
     public bool AssignFirstConsistent()
     {
@@ -102,7 +108,7 @@ public abstract class DiSCPAgent<T>
 
     public bool IsViewConsistent()
     {
-        return (manager.CountInconsistencies(ID, value) == 0);
+        return (manager.CountInconsistencies(Name, value) == 0);
     }
 
     public void SetConsistent(bool value)
@@ -115,7 +121,7 @@ public abstract class DiSCPAgent<T>
 
     public void SetPriority(int p)
     {
-        Debug.Log("<color=cyan>" + ID + " assigning new priority " + p + "</color>");
+        Debug.Log("<color=cyan>" + Name + " assigning new priority " + p + "</color>");
         Priority = p;
     }
 
@@ -141,20 +147,20 @@ public abstract class DiSCPAgent<T>
 
 public class DiSCPAgentViewTuple<T>
 {
-    public string ID;
+    public string Name;
     public T value;
     public uint priority;
 
     public DiSCPAgentViewTuple(string iD, T value, uint priority = 0)
     {
-        ID = iD;
+        Name = iD;
         this.value = value;
         this.priority = priority;
     }
 
     public string Print()
     {
-        string printable = ID + " " + value.ToString();
+        string printable = Name + " " + value.ToString();
         if (priority > 0) printable += " P:" + priority;
         return printable;
     }

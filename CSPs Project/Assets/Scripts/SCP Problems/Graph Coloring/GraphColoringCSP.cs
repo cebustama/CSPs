@@ -145,7 +145,7 @@ public class GraphColoringCSP : CSP<Color>
         double t0 = Time.time;
 
         // TODO: Generalize ordering mehods
-        var orderedVariables = OrderVariables(vars =>
+        List<Variable<Color>> orderedVariables = OrderVariables(vars =>
         {
             // Randomize
             return vars.OrderBy(a => rng.Next()).ToList();
@@ -156,7 +156,7 @@ public class GraphColoringCSP : CSP<Color>
         int addedValues = 0;
         while (assignedVars.Count < orderedVariables.Count)
         {
-            string varID = orderedVariables[assignedVars.Count].name;
+            string varID = VariableNames[orderedVariables[assignedVars.Count].id];
 
             bool foundInDomain = csp.AssignFirstValid(varID, true, () =>
             {
@@ -180,10 +180,13 @@ public class GraphColoringCSP : CSP<Color>
     {
         UnityEngine.Debug.Log("<color=green>Starting Backtracking Algorithm</color>");
 
-        List<CSPVariable<Color>> orderedVariables = OrderVariables(vars =>
+        List<Variable<Color>> orderedVariables = OrderVariables(vars =>
         {
-            return vars.OrderByDescending(a => Graph.Degree(Graph.GetVertex(a.name))).ToList();
-            //return vars;
+            return vars.OrderByDescending(a => 
+                Graph.Degree(
+                    Graph.GetVertex(
+                        VariableNames[a.id]
+                ))).ToList();
         });
 
         int maxIterations = 1000;
@@ -199,7 +202,7 @@ public class GraphColoringCSP : CSP<Color>
     // Recursive Function, modifies CSP directly
     // TODO: Get solution but don't modify CSP instance
     private bool SelectValue(
-        CSP<Color> csp, List<CSPVariable<Color>> orderedVariables,
+        CSP<Color> csp, List<Variable<Color>> orderedVariables,
         int varIndex, int maxIterations, int iterationNumber, bool changeValue = false)
     {
         if (iterationNumber >= maxIterations)
@@ -209,19 +212,19 @@ public class GraphColoringCSP : CSP<Color>
 
         if (!changeValue)
         {
-            UnityEngine.Debug.Log("Selecting value for " + orderedVariables[varIndex].name
+            UnityEngine.Debug.Log("Selecting value for " + VariableNames[orderedVariables[varIndex].id]
                 + " (assigned: " + (varIndex + 1) + "/" + orderedVariables.Count
                 + " iteration " + iterationNumber + ")");
 
-            foundValue = csp.AssignFirstValid(orderedVariables[varIndex].name);
+            foundValue = csp.AssignFirstValid(VariableNames[orderedVariables[varIndex].id]);
         }
         else
         {
-            UnityEngine.Debug.Log("<color=red>BACKTRACK</color>: Selecting value for " + orderedVariables[varIndex].name
+            UnityEngine.Debug.Log("<color=red>BACKTRACK</color>: Selecting value for " + VariableNames[orderedVariables[varIndex].id]
                 + " (assigned: " + (varIndex + 1) + "/" + orderedVariables.Count
                 + " iteration " + iterationNumber + ")");
 
-            foundValue = csp.AssignValidOtherThan(orderedVariables[varIndex].name, orderedVariables[varIndex].value);
+            foundValue = csp.AssignValidOtherThan(VariableNames[orderedVariables[varIndex].id], orderedVariables[varIndex].value);
         }
 
         // Value found, advance
@@ -257,9 +260,11 @@ public class GraphColoringCSP : CSP<Color>
     /// <param name="watch"></param>
     public void SolveABT(CSP<Color> csp, GameObject[] agentObjects, string seed)
     {
+        UnityEngine.Debug.Log("Starting ABT with " + csp + " agents:" + agentObjects.Length + " seed:" + seed);
+        
         // TODO: TODA ESTA PARTE, hay que ordenar las variables y luego los agentes, o al mismo tiempo de alguna forma
         // Order variables
-        List<CSPVariable<Color>> orderedVariables = OrderVariables(vars =>
+        List<Variable<Color>> orderedVariables = OrderVariables(vars =>
         {
             //return vars.OrderByDescending(a => Graph.Degree(Graph.GetVertex(a.name))).ToList();
             return vars;
@@ -272,14 +277,18 @@ public class GraphColoringCSP : CSP<Color>
 
         // Create ABT manager
         ABTManager<Color> manager = new ABTManager<Color>(csp);
+        
         for (int i = 0; i < orderedVariables.Count; i++)
         {
+            UnityEngine.Debug.Log("Creating agent for variable id" + orderedVariables[i].id + " name " + VariableNames[orderedVariables[i].id]);
             // Create Agent
-            var ABTAgent = manager.AddAgent(orderedVariables[i].name, orderedVariables.Count - i);
+            var ABTAgent = manager.AddAgent(VariableNames[orderedVariables[i].id], orderedVariables.Count - i);
 
             // Add component to gameobject and setup
             GraphColoringABTAgent agentBehaviour = orderedAgents[i].AddComponent<GraphColoringABTAgent>();
-            agentBehaviour.Setup(manager, ABTAgent.ID);
+            agentBehaviour.Setup(manager, ABTAgent.Name);
+
+            UnityEngine.Debug.Log("Created agent " + ABTAgent.Name);
         }
 
         manager.Start(seed);
@@ -288,7 +297,7 @@ public class GraphColoringCSP : CSP<Color>
     public void SolveAWCS(CSP<Color> csp, GameObject[] agentObjects, string seed)
     {
         // Order variables
-        List<CSPVariable<Color>> orderedVariables = OrderVariables(vars =>
+        List<Variable<Color>> orderedVariables = OrderVariables(vars =>
         {
             //return vars.OrderByDescending(a => Graph.Degree(Graph.GetVertex(a.name))).ToList();
             return vars;
@@ -302,11 +311,11 @@ public class GraphColoringCSP : CSP<Color>
         for (int i = 0; i < orderedVariables.Count; i++)
         {
             // Create Agent
-            var AWCSAgent = manager.AddAgent(orderedVariables[i].name, orderedVariables.Count - i);
+            var AWCSAgent = manager.AddAgent(VariableNames[orderedVariables[i].id], orderedVariables.Count - i);
 
             // Add component to gameobject and setup
             GraphColoringAWCSAgent agentBehaviour = orderedAgents[i].AddComponent<GraphColoringAWCSAgent>();
-            agentBehaviour.Setup(manager, AWCSAgent.ID);
+            agentBehaviour.Setup(manager, AWCSAgent.Name);
         }
 
         manager.Start(seed);

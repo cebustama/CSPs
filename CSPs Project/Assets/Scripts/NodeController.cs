@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class NodeController : MonoBehaviour
 {
     // TODO: Generalize this with other types
-    public CSP<Color>.CSPVariable<Color> Variable { get; private set; }
+    public CSP<Color>.Variable<Color> Variable { get; private set; }
 
     [Header("References")]
     [SerializeField]
@@ -66,11 +66,11 @@ public class NodeController : MonoBehaviour
         domainCanvas.worldCamera = Camera.main;
     }
 
-    public void Connect(GraphColoringCSP gcCSP, CSP<Color>.CSPVariable<Color> var)
+    public void Connect(GraphColoringCSP gcCSP, CSP<Color>.Variable<Color> var)
     {
         Variable = var;
 
-        variableNameText.SetText(Variable.name);
+        variableNameText.SetText(gcCSP.VariableNames[Variable.id]);
 
         // Domain text
         string domain = "D:{";
@@ -89,7 +89,7 @@ public class NodeController : MonoBehaviour
         }
 
         // Information
-        var vertex = gcCSP.Graph.GetVertex(var.name);
+        var vertex = gcCSP.Graph.GetVertex(gcCSP.VariableNames[Variable.id]);
         informationText.SetText("Degree: " + gcCSP.Graph.Degree(vertex) / 2);
         informationCanvas.gameObject.SetActive(true);
     }

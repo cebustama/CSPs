@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -18,15 +19,15 @@ public class AWCSAgent<T> : DiSCPAgent<T>
     // AWCS sends ok message to all neighbors
     public void SendOK()
     {
-        UnityEngine.Debug.Log("<color=green>" + ID + " sending OK to all neighbors." + "</color>");
+        UnityEngine.Debug.Log("<color=green>" + Name + " sending OK to all neighbors." + "</color>");
 
         awcsManager.SendMessage(
             new AWCSMessage<T>(
                 DiSCPAgentMessage<T>.MessageType.OK,
-                new List<DiSCPAgentViewTuple<T>>() { new DiSCPAgentViewTuple<T>(ID, value, (uint)Priority) },
-                ID
+                new List<DiSCPAgentViewTuple<T>>() { new DiSCPAgentViewTuple<T>(Name, value, (uint)Priority) },
+                Name
             ),
-            this, Neighbors
+            this, Neighbors.ConvertAll(nId => manager.CSP.VariableNames[nId])
         );
     }
 
@@ -53,9 +54,9 @@ public class AWCSAgent<T> : DiSCPAgent<T>
             {
                 sentNoGoodElements.Add(tuple);
                 awcsManager.SendMessage(
-                    new AWCSMessage<T>(DiSCPAgentMessage<T>.MessageType.NOGOOD, noGood, ID),
+                    new AWCSMessage<T>(DiSCPAgentMessage<T>.MessageType.NOGOOD, noGood, Name),
                     this,
-                    new List<string>() { tuple.ID }
+                    new List<string>() { tuple.Name }
                 );
             }
             sentNoGoods.Add(noGood);
@@ -73,7 +74,7 @@ public class AWCSAgent<T> : DiSCPAgent<T>
             // REVISAR CONDICIONES DE TERMINO
             AssignValue(false);
 
-            UnityEngine.Debug.Log("<color=cyan>" + ID + " assigned value " + value + "</color>");
+            UnityEngine.Debug.Log("<color=cyan>" + Name + " assigned value " + value + "</color>");
 
             // Enviar OK a vecinos
             SendOK();
@@ -86,7 +87,7 @@ public class AWCSAgent<T> : DiSCPAgent<T>
 
     public override bool AssignValue(bool checkConsistency = true)
     {
-        return manager.AssignValue(ID, checkConsistency);
+        return manager.AssignValue(Name, checkConsistency);
     }
 }
 

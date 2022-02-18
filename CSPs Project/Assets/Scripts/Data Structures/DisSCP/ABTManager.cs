@@ -17,7 +17,9 @@ public class ABTManager<T> : DiSCPManager<T>
 
     public override DiSCPAgent<T> AddAgent(string id, int priority = 0)
     {
+        Debug.Log("1");
         ABTAgent<T> agent = new ABTAgent<T>(this, id, priority);
+        Debug.Log("Adding agent " + id + " " + agent);
         AgentsIndex.Add(id, agent);
 
         return agent;
@@ -44,7 +46,7 @@ public class ABTManager<T> : DiSCPManager<T>
         // Start with random value
         foreach (DiSCPAgent<T> a in AgentsIndex.Values)
         {
-            InitializeAgent(a.ID);
+            InitializeAgent(a.Name);
         }
     }
 
@@ -58,9 +60,9 @@ public class ABTManager<T> : DiSCPManager<T>
         {
             if (condition == null || condition(sender, AgentsIndex[r]))
             {
-                Debug.Log(sender.ID + " (P:" + sender.Priority + ")"
+                Debug.Log(sender.Name + " (P:" + sender.Priority + ")"
                     + " sent " + message.Print(false) + " to "
-                    + AgentsIndex[r].ID + " (P:" + AgentsIndex[r].Priority + ")");
+                    + AgentsIndex[r].Name + " (P:" + AgentsIndex[r].Priority + ")");
 
                 // Only print nogood for debugging
                 if (message.Type == DiSCPAgentMessage<T>.MessageType.NOGOOD)
@@ -89,7 +91,7 @@ public class ABTManager<T> : DiSCPManager<T>
         {
             foreach (DiSCPAgentViewTuple<T> tuple in ng)
             {
-                if (tuple.ID == checker.ID) toCheck.Add(new List<DiSCPAgentViewTuple<T>>() { tuple });
+                if (tuple.Name == checker.Name) toCheck.Add(new List<DiSCPAgentViewTuple<T>>() { tuple });
             }
         }
 

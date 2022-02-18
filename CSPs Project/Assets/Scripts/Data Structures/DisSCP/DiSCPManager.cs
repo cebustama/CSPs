@@ -43,9 +43,9 @@ public abstract class DiSCPManager<T>
         uint count = 0;
         foreach (DiSCPAgentViewTuple<T> v in toCheck)
         {
-            var constraints = CSP.GetConstraintsFromTo(checker.ID, v.ID);
-            if (constraints.Count > 0) Debug.Log("Checking (" + checker.ID + "," 
-                + value + " with (" + v.ID + "," + v.value + ") constraints: " 
+            var constraints = CSP.GetConstraintsFromTo(checker.Name, v.Name);
+            if (constraints.Count > 0) Debug.Log("Checking (" + checker.Name + "," 
+                + value + " with (" + v.Name + "," + v.value + ") constraints: " 
                 + (constraints.Count));
 
             uint currCount = count;
@@ -80,7 +80,7 @@ public abstract class DiSCPManager<T>
             foreach (var ng in pairs)
             {
                 // Check own value first, skip to next
-                if (ng.ID == checker.ID)
+                if (ng.Name == checker.Name)
                 {
                     if (ng.value.Equals(value))
                     {
@@ -90,7 +90,7 @@ public abstract class DiSCPManager<T>
                     continue;
                 }
 
-                var viewItem = checker.GetViewValue(ng.ID);
+                var viewItem = checker.GetViewValue(ng.Name);
 
                 if (viewItem == null)
                 {
@@ -100,8 +100,8 @@ public abstract class DiSCPManager<T>
                 
                 var viewValue = viewItem.value;
 
-                Debug.Log("Checking NOGOOD PAIR (" + ng.ID + "," + ng.value + ") " +
-                    "with view value (" + ng.ID + "," + viewValue + ")");
+                Debug.Log("Checking NOGOOD PAIR (" + ng.Name + "," + ng.value + ") " +
+                    "with view value (" + ng.Name + "," + viewValue + ")");
 
                 if (ng.value.Equals(viewValue))
                 {
@@ -132,9 +132,9 @@ public abstract class DiSCPManager<T>
 
     public bool AssignFirstConsistent(DiSCPAgent<T> checker)
     {
-        Debug.Log("<color=magenta>" + checker.ID + 
+        Debug.Log("<color=magenta>" + checker.Name + 
             " trying to find value in domain." + "</color>");
-        var variable = CSP.VariablesDictionary[checker.ID];
+        COP<T>.Variable<T> variable = CSP.GetVariable(checker.ID);
 
         // Check every element in domain until one is consistent
         foreach (T v in variable.domain)
@@ -142,9 +142,9 @@ public abstract class DiSCPManager<T>
             if (!v.Equals(checker.value))
             {
                 //Debug.Log("<color=orange>" + checker.ID + " trying " + v + "</color>");
-                if (CountInconsistencies(checker.ID, v) == 0)
+                if (CountInconsistencies(checker.Name, v) == 0)
                 {
-                    CSP.AssignValue(checker.ID, v);
+                    CSP.AssignValue(checker.Name, v);
                     return true;
                 }
             }

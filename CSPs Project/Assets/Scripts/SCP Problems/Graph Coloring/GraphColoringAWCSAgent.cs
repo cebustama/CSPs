@@ -32,7 +32,7 @@ public class GraphColoringAWCSAgent : MonoBehaviour
 
         if (agent.Messages.Count == 0)
         {
-            Debug.Log("<color=red>" + agent.ID + " HAS NO MESSAGES</color>");
+            Debug.Log("<color=red>" + agent.Name + " HAS NO MESSAGES</color>");
         }
 
         // Handle all received messages
@@ -50,7 +50,7 @@ public class GraphColoringAWCSAgent : MonoBehaviour
         AWCSMessage<Color> message = 
             (AWCSMessage<Color>)agent.Messages.Dequeue();
 
-        Debug.Log(agent.ID + " handling " + message.Print());
+        Debug.Log(agent.Name + " handling " + message.Print());
 
         switch (message.Type)
         {
@@ -66,20 +66,21 @@ public class GraphColoringAWCSAgent : MonoBehaviour
                 foreach (var p in message.Contents)
                 {
                     // If variable in nogood is not a neighbor and not itself
-                    if (!agent.Neighbors.Contains(p.ID) && agent.ID != p.ID)
+                    if (!agent.Neighbors.Contains(manager.CSP.GetVariable(p.Name).id) 
+                        && agent.Name != p.Name)
                     {
                         // Add nogood pair to view
                         agent.View.Add(p);
 
                         // Add to local neighbors
-                        agent.AddNeighbor(p.ID);
+                        agent.AddNeighbor(p.Name);
                     }
                 }
                 break;
             case DiSCPAgentMessage<Color>.MessageType.ADDME:
                 // Add as new neighbor
-                agent.AddNeighbor(message.Contents[0].ID);
-                Debug.Log(agent.ID + " added " + message.Contents[0].ID + " as a neighbor.");
+                agent.AddNeighbor(message.Contents[0].Name);
+                Debug.Log(agent.Name + " added " + message.Contents[0].Name + " as a neighbor.");
 
                 // TODO: Agregar conexiones en el grafo?
 
@@ -89,7 +90,7 @@ public class GraphColoringAWCSAgent : MonoBehaviour
 
     private void CheckView()
     {
-        Debug.Log("<color=cyan>=====" + agent.ID + " Checking view with value " + agent.value + "=====</color>");
+        Debug.Log("<color=cyan>=====" + agent.Name + " Checking view with value " + agent.value + "=====</color>");
         Debug.Log(agent.PrintView());
         // Check consistency with current value and View
         bool consistent = agent.IsViewConsistent();
@@ -104,7 +105,7 @@ public class GraphColoringAWCSAgent : MonoBehaviour
                 Backtrack();
             else
             {
-                Debug.Log("<color=yellow>" + agent.ID + " view was inconsistent, assigned new value " + agent.value + "</color>");
+                Debug.Log("<color=yellow>" + agent.Name + " view was inconsistent, assigned new value " + agent.value + "</color>");
                 agent.SendOK();
 
                 UpdateView();
@@ -114,7 +115,7 @@ public class GraphColoringAWCSAgent : MonoBehaviour
         }
         else
         {
-            Debug.Log("<color=cyan>" + agent.ID + " view is consistent!" + "</color>");
+            Debug.Log("<color=cyan>" + agent.Name + " view is consistent!" + "</color>");
             agent.SetConsistent(true);
         }
     }
@@ -126,7 +127,7 @@ public class GraphColoringAWCSAgent : MonoBehaviour
 
     private void Backtrack()
     {
-        Debug.Log("<color=yellow>Coulnd't find consistent values in domain, " + agent.ID + " BACKTRACKING</color>");
+        Debug.Log("<color=yellow>Coulnd't find consistent values in domain, " + agent.Name + " BACKTRACKING</color>");
 
         bool sentNoGood = agent.SendNoGood();
 
