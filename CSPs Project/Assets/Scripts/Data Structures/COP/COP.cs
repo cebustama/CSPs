@@ -20,46 +20,6 @@ public partial class COP<T>
 {
     protected static System.Random rng = new System.Random();
 
-    /// <summary>
-    /// Single instance of a variable for this COP
-    /// </summary>
-    /// <typeparam name="V">Datatype of value, same as COP</typeparam>
-    [Serializable]
-    public class Variable<V>
-    {
-        public int id; // Unique Identifier
-        public List<V> domain; // Use list in case of dynamic domains
-        public V value;
-
-        // Should return a utility amount for each possible assigned value
-        // TODO: Store these in utility functions array since it depends on shared restrictions?
-        public Func<V, float> utilityFunction;
-
-        public void AssignRandom(System.Random rng)
-        {
-            if (domain.Count < 1)
-                throw new ArgumentOutOfRangeException();
-
-            value = domain[rng.Next(0, domain.Count)];
-        }
-
-        public bool AssignValue(V value, bool checkDomain = false)
-        {
-            if (!checkDomain)
-                this.value = value;
-            // Check domain
-            else if (!domain.Contains(value))
-                return false;
-
-            return true;
-        }
-
-        public bool ValueInDomain()
-        {
-            return domain.Contains(value);
-        }
-    }
-
     // Variables list
     public Variable<T>[] Variables { get; private set; }
 
@@ -71,6 +31,7 @@ public partial class COP<T>
     // {key: hash, value: name}
     public Dictionary<int, string> VariableNames { get; private set; }
 
+    // TODO: IMPLEMENT CONSTRAINTS AS UTILITY FUNCTIONS, MAYBE USE DELEGATE AND SUBSCRIBE EACH CONSTRAINT TO BASE FUNCTION
     public List<Constraint<T>> Constraints { get; private set; }
     // TODO: Store index instead of constraint
     public Dictionary<int, List<Constraint<T>>> ConstraintsDictionary { get; private set; }
@@ -117,7 +78,7 @@ public partial class COP<T>
 
     public Variable<T> GetVariable(string name)
     {
-        Debug.Log("Looking for " + name + " id:" + name.GetHashCode());
+        //Debug.Log("Looking for " + name + " id:" + name.GetHashCode());
         return Variables[VariablesIndex[name.GetHashCode()]];
     }
 

@@ -4,6 +4,7 @@ using System.Linq;
 
 public partial class COP<T>
 {
+    #region Constraint Types
     /// <summary>
     /// Single Constraint for this COP
     /// Can include many variables
@@ -55,6 +56,7 @@ public partial class COP<T>
         }
     }
 
+    #endregion
 
     // TODO: IMPLEMENT ADDING HARD CONSTRAINT
     // BY SETTING THE UTILITY FUNCTION OF INVOLVED VARIABLES
@@ -62,10 +64,10 @@ public partial class COP<T>
     {
         Constraint<T> constraint = new Constraint<T>(variables, condition);
         Constraints.Add(constraint);
-        IndexConstraint(variables, constraint);
+        ProcessConstraint(variables, constraint);
     }
 
-    protected virtual void IndexConstraint(string[] vIds, Constraint<T> constraint)
+    protected virtual void ProcessConstraint(string[] vIds, Constraint<T> constraint)
     {
         // Store constraints associated with each variable
         foreach (string v in vIds)

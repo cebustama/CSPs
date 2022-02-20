@@ -44,13 +44,11 @@ public abstract class DiSCPAgent<T>
         this.manager = manager;
         Priority = priority;
         Name = name;
-        Debug.Log("Name " + Name);
-        Debug.Log(manager.CSP.GetVariable(Name));
 
         // Obtain logical neighbors list from CSP (connected by a constraint)
         foreach (var c in manager.CSP.ConstraintsDictionary[ID])
         {
-            Debug.Log("Adding neighbors for constraint " + c);
+            //Debug.Log("Adding neighbors for constraint " + c);
             foreach (int id in c.variableIDs)
                 if (id != ID && !Neighbors.Contains(id)) Neighbors.Add(id);
         }

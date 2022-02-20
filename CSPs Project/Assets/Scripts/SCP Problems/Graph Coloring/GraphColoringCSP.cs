@@ -14,15 +14,7 @@ using System.Collections;
 // TODO: Create CSPGraph class, CSPs which receive graphs as input
 public class GraphColoringCSP : CSP<Color>
 {
-    [Serializable]
-    public class GraphNode : IVertex
-    {
-        public string Name;
-
-        public string GetID() => Name;
-    }
-
-    public UndirectedGraph<GraphNode, int> Graph { get; private set; }
+    public UndirectedGraph<GenericNode, int> Graph { get; private set; }
 
     public GraphColoringCSP(string[] names, Color[][] domains, float density, string seed) : base(names, domains, Color.black)
     {
@@ -32,7 +24,7 @@ public class GraphColoringCSP : CSP<Color>
         // Setup constraints here based on graph neighbors
         foreach (var s in Graph.GetEdgeSet())
         {
-            AddPairConstraint(s.GetFirst().Name, s.GetSecond().Name);
+            AddBinaryConstraint(s.GetFirst().Name, s.GetSecond().Name);
         }
     }
 
@@ -40,12 +32,12 @@ public class GraphColoringCSP : CSP<Color>
     {
         System.Random rng = new System.Random(seed.GetHashCode());
 
-        Graph = new UndirectedGraph<GraphNode, int>();
+        Graph = new UndirectedGraph<GenericNode, int>();
 
         // Create vertices
         for (int i = 0; i < names.Length; i++)
         {
-            Graph.AddVertex(new GraphNode()
+            Graph.AddVertex(new GenericNode()
             {
                 Name = names[i]
             });
@@ -53,11 +45,11 @@ public class GraphColoringCSP : CSP<Color>
 
         // Connect vertices according to density
         float vertices = Graph.VerticesNumber();
-        List<GraphNode> vertexList = Graph.GetVertexList();
+        List<GenericNode> vertexList = Graph.GetVertexList();
         while ((Graph.EdgesNumber() / (vertices * (vertices - 1)) < density))
         {
-            GraphNode n1 = vertexList[rng.Next(0, vertexList.Count)];
-            GraphNode n2 = Graph.GetVertexOtherThan(n1, rng);
+            GenericNode n1 = vertexList[rng.Next(0, vertexList.Count)];
+            GenericNode n2 = Graph.GetVertexOtherThan(n1, rng);
 
             // Add both directions
             Graph.AddEdge(n1, n2, 0);
@@ -65,8 +57,8 @@ public class GraphColoringCSP : CSP<Color>
         }
     }
 
-    // TODO: Generalize these two?
-    private void AddPairConstraint(string v1, string v2)
+    // TODO: Move to COP.Constraints
+    private void AddBinaryConstraint(string v1, string v2)
     {
         string[] vars = new string[] { v1, v2 };
         AddConstraint(vars, CheckNotEqual);
@@ -87,7 +79,7 @@ public class GraphColoringCSP : CSP<Color>
     {
         BinaryConstraint<Color> dirC = new BinaryConstraint<Color>(variables, condition);
         Constraints.Add(dirC);
-        IndexConstraint(variables, dirC);
+        ProcessConstraint(variables, dirC);
     }
 
     // TODO: Where to put these, Generalize?

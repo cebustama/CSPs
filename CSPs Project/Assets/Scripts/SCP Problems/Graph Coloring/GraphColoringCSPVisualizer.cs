@@ -11,18 +11,10 @@ using TMPro;
 // TOOD: Rename to GraphColoringController, move all rendering logic to GraphColoringRenderer
 public class GraphColoringCSPVisualizer : MonoBehaviour
 {
-    // TODO: Scriptable Object
     [Header("Graph")]
+    [SerializeField] GraphSO graphSettings;
 
-    [SerializeField]
-    private string graphSeed;
-
-    [SerializeField]
-    private int numNodes;
-
-    [SerializeField, Range(0f, 1f)]
-    private float density = .5f;
-
+    [Header("Coloring")]
     [SerializeField]
     private uint numColors;
 
@@ -158,8 +150,6 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
         {
             solve = false;
 
-            Debug.Log("csp: " + gcCSP);
-
             // TODO: Algorithm classes, "default" and distributed (uses agents)
             if (algorithm != Algorithm.ABT && algorithm != Algorithm.AWCS)
                 gcCSP.Solve();
@@ -172,12 +162,10 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
                     agents[i] = nodes[i].gameObject;
                 }
 
-                Debug.Log("agents " + agents.Length);
-
                 if (algorithm == Algorithm.ABT)
-                    gcCSP.SolveABT(gcCSP, agents, graphSeed);
+                    gcCSP.SolveABT(gcCSP, agents, graphSettings.seed);
                 else if (algorithm == Algorithm.AWCS)
-                    gcCSP.SolveAWCS(gcCSP, agents, graphSeed);
+                    gcCSP.SolveAWCS(gcCSP, agents, graphSettings.seed);
             }
 
             OnValidate();
@@ -211,8 +199,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
 
     private void SetupData()
     {
-        string[] variables = new string[numNodes];
-        for (int i = 0; i < numNodes; i++)
+        string[] variables = new string[graphSettings.nodesCount];
+        for (int i = 0; i < graphSettings.nodesCount; i++)
         {
             variables[i] = "X" + (i + 1);
         }
@@ -257,7 +245,8 @@ public class GraphColoringCSPVisualizer : MonoBehaviour
 
         // Graph coloring 
         gcCSP = new GraphColoringCSP(
-            variables, domains, density, graphSeed
+            variables, domains, 
+            graphSettings.density, graphSettings.seed
         );
 
         gcCSP.SetNumColors(numColors);
