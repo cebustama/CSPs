@@ -6,8 +6,10 @@ using UnityEngine.UI;
 
 public class NodeController : MonoBehaviour
 {
-    // TODO: Generalize this with other types
+    // TODO: Implement CSPNode/COPNode with extends NodeController
     public CSP<Color>.Variable<Color> Variable { get; private set; }
+
+    public float Radius => transform.localScale.x / 2f; 
 
     [Header("References")]
     [SerializeField]

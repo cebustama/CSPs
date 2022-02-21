@@ -28,6 +28,7 @@ public class GraphColoringCSP : CSP<Color>
         }
     }
 
+    // TODO: Get constraints-graph from graphSO
     private void GenerateGraph(string[] names, float density, string seed)
     {
         System.Random rng = new System.Random(seed.GetHashCode());
