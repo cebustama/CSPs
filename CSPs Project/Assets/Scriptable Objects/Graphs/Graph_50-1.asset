@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c02b0b7b3d448740afa5e2e443f32fc, type: 3}
   m_Name: Graph_50-1
   m_EditorClassIdentifier: 
-  seed: poto
+  seed: et
   nodesCount: 50
-  nodeName: X
+  namePrefix: X
   density: 1
+  directed: 0

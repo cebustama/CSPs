@@ -72,7 +72,7 @@ public class GraphVisualizer : MonoBehaviour
         {
             OnEnable();
 
-            // TODO: Adjust new separation
+            // TODO: Adjust new separation and sizes
             foreach (NodeController nc in Nodes)
             {
 
@@ -231,6 +231,8 @@ public class GraphVisualizer : MonoBehaviour
         Nodes = new List<NodeController>();
         NodeIndex = new Dictionary<int, int>();
 
+        // TODO: static please
+        System.Random rng = new System.Random(seed.GetHashCode());
         // Initialize nodes
         foreach (var vertex in vertexSet)
         {
@@ -238,6 +240,8 @@ public class GraphVisualizer : MonoBehaviour
             if (node == null) node =
                     Instantiate(nodePrefab, nodesContainer)
                     .GetComponent<NodeController>();
+
+            node.NodeMaterial.color = LineGradient.Evaluate((float)rng.NextDouble());
 
             NodeIndex.Add(vertex.GetID(), Nodes.Count);
             Nodes.Add(node);
